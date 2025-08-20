@@ -1,0 +1,8 @@
+{
+  "name": "multitune",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ]
+}
