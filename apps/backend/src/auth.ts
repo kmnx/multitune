@@ -6,25 +6,30 @@ import pool from './db';
 import passport from 'passport';
 import axios from 'axios';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
+import { Request, Response, NextFunction } from 'express';
 
+// Extend Express Request to include user property
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
 
 // Middleware to authenticate requests using JWT in Authorization header
-function authenticateJWT(req, res, next) {
+function authenticateJWT(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' });
   const token = authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Missing token' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;
     next();
   });
 }
 // Fetch YouTube playlists for the authenticated user
-router.get('/api/youtube/playlists', authenticateJWT, async (req, res) => {
+router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user.userId;
     // Get YouTube access token from user_services
@@ -44,8 +49,9 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req, res) => {
     });
     res.json({ playlists: ytRes.data.items });
   } catch (err) {
-    console.error('YouTube playlist fetch error:', err?.response?.data || err);
-    res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: err?.response?.data || err.message });
+            const errorData = (err as any)?.response?.data || (err as any)?.message || err;
+        console.error('YouTube playlist fetch error:', errorData);
+        res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: errorData });
   }
 });
 
@@ -233,7 +239,7 @@ router.get('/google/callback', passport.authenticate('google', { session: false,
 });
 
 // Signup
-router.post('/signup', async (req: any, res: any) => {
+router.post('/signup', async (req: Request, res: Response) => {
   const { username, password, email } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
@@ -258,7 +264,7 @@ router.post('/signup', async (req: any, res: any) => {
 });
 
 // Login
-router.post('/login', async (req: any, res: any) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
