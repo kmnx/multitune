@@ -85,6 +85,16 @@ const HomePage = () => {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [services, setServices] = useState(defaultServices);
 
+  // Handler for clicking a service in the sidebar
+  const handleServiceClick = (service: typeof defaultServices[0]) => {
+    if (service.name === 'YouTube' && !service.linked) {
+      // Start YouTube OAuth flow
+      window.location.href = 'http://localhost:4000/auth/youtube';
+      return;
+    }
+    setSelectedService(service.name);
+  };
+
   useEffect(() => {
     // Simple check: token exists
     if (getToken()) setAuthenticated(true);
@@ -105,7 +115,7 @@ const HomePage = () => {
           {services.map(service => (
             <div
               key={service.name}
-              onClick={() => setSelectedService(service.name)}
+              onClick={() => handleServiceClick(service)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
