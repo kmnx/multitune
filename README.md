@@ -6,6 +6,26 @@ A modern web app for collecting, organizing, and playing music from multiple sou
 - `apps/backend`: Node.js/Express backend (TypeScript, Postgres)
 - `apps/frontend`: React frontend
 
+
+## Database (Postgres)
+
+This project uses a local Postgres database via Docker for development.
+
+**Default connection settings:**
+
+- Host: `localhost`
+- Port: `5432`
+- User: `multitune`
+- Password: `multitune`
+- Database: `multitune`
+
+To start the database:
+```sh
+docker compose up -d
+```
+
+---
+
 ## Getting Started
 
 1. Install dependencies:
