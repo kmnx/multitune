@@ -94,6 +94,34 @@ const HomePage = () => {
   const [ytLoading, setYtLoading] = useState(false);
   const [ytError, setYtError] = useState<string | null>(null);
   const [ytSidebarOpen, setYtSidebarOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<any | null>(null);
+  const [playlistItems, setPlaylistItems] = useState<any[] | null>(null);
+  const [playlistItemsLoading, setPlaylistItemsLoading] = useState(false);
+  const [playlistItemsError, setPlaylistItemsError] = useState<string | null>(null);
+  // Fetch items for a playlist by DB id
+  const fetchPlaylistItems = async (playlist: any) => {
+    setSelectedPlaylist(playlist);
+    setPlaylistItems(null);
+    setPlaylistItemsLoading(true);
+    setPlaylistItemsError(null);
+    try {
+  const res = await fetch(`http://localhost:4000/auth/api/db/playlist/${playlist.id}/items`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setPlaylistItemsError(data.error);
+        setPlaylistItems(null);
+      } else {
+        setPlaylistItems(data.items);
+      }
+    } catch {
+      setPlaylistItemsError('Failed to fetch playlist items');
+      setPlaylistItems(null);
+    } finally {
+      setPlaylistItemsLoading(false);
+    }
+  };
 
   // Handler for clicking a service in the sidebar
 
@@ -219,9 +247,24 @@ const HomePage = () => {
                     <ul style={{ paddingLeft: 0, listStyle: 'none', margin: 0 }}>
                       {ytPlaylists.map((pl: any) => (
                         <li key={pl.id} style={{ marginBottom: 8 }}>
-                          <a href={`https://www.youtube.com/playlist?list=${pl.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#eebf63', textDecoration: 'none', fontWeight: 500 }}>
-                            {pl.snippet.title}
-                          </a>
+                          <button
+                            onClick={() => fetchPlaylistItems(pl)}
+                            style={{
+                              background: selectedPlaylist && selectedPlaylist.id === pl.id ? '#eebf63' : 'transparent',
+                              color: selectedPlaylist && selectedPlaylist.id === pl.id ? '#232946' : '#eebf63',
+                              border: 'none',
+                              fontWeight: 500,
+                              fontSize: 16,
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: 4,
+                              width: '100%',
+                              textAlign: 'left',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            {pl.title}
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -255,6 +298,40 @@ const HomePage = () => {
             <div style={{ marginTop: 16, color: '#393e6e' }}>
               <em>Playlists and tracks from {selectedService} will appear here.</em>
             </div>
+          </div>
+        )}
+        {selectedService === 'YouTube' && selectedPlaylist && (
+          <div>
+            <h2 style={{ color: '#232946', fontWeight: 700, marginBottom: 16 }}>{selectedPlaylist.title}</h2>
+            {playlistItemsLoading && <div>Loading items...</div>}
+            {playlistItemsError && <div style={{ color: 'red' }}>{playlistItemsError}</div>}
+            {playlistItems && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <thead>
+                  <tr style={{ background: '#f7f7fa', color: '#232946', fontWeight: 700 }}>
+                    <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Title</th>
+                    <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Upload Date</th>
+                    <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Channel</th>
+                    <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Placeholder</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playlistItems.map((item: any) => (
+                    <tr key={item.yt_video_id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ padding: '6px 12px', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <a href={`https://www.youtube.com/watch?v=${item.yt_video_id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#232946', textDecoration: 'underline' }}>{item.title}</a>
+                      </td>
+                      <td style={{ padding: '6px 12px' }}>{item.published_at ? new Date(item.published_at).toLocaleDateString() : ''}</td>
+                      <td style={{ padding: '6px 12px' }}>{item.channel_title || ''}</td>
+                      <td style={{ padding: '6px 12px', color: '#aaa' }}>-</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {playlistItems && playlistItems.length === 0 && !playlistItemsLoading && (
+              <div style={{ color: '#393e6e', marginTop: 16 }}><em>No items found in this playlist.</em></div>
+            )}
           </div>
         )}
       </div>

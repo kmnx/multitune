@@ -45,6 +45,28 @@ router.get('/api/youtube/linked', authenticateJWT, async (req: AuthenticatedRequ
 
 // Fetch YouTube playlists for the authenticated user
 router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
+
+// Fetch items for a specific playlist from our own database (generic DB API)
+router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user.userId;
+  const playlistId = req.params.id;
+  try {
+    // Ensure the playlist belongs to the user
+    const playlistRes = await pool.query('SELECT * FROM playlists_youtube WHERE id = $1 AND user_id = $2', [playlistId, userId]);
+    if (!playlistRes.rows.length) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+    // Fetch items ordered by position (or upload date as fallback)
+    const itemsRes = await pool.query(
+      `SELECT * FROM playlist_items_youtube WHERE playlist_id = $1 ORDER BY position ASC, published_at DESC`,
+      [playlistId]
+    );
+    res.json({ items: itemsRes.rows });
+  } catch (err) {
+    console.error('[DB Playlist Items] Error:', err);
+    res.status(500).json({ error: 'Failed to fetch playlist items' });
+  }
+});
   const userId = req.user.userId;
   console.log(`[YouTube Playlists] Called for userId: ${userId}`);
   try {
@@ -55,19 +77,106 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
       return res.status(400).json({ error: 'YouTube not linked' });
     }
     const accessToken = result.rows[0].access_token;
+
     // Fetch playlists from YouTube Data API
-    const ytRes = await axios.get('https://www.googleapis.com/youtube/v3/playlists', {
-      params: {
-        part: 'snippet,contentDetails',
-        mine: true,
-        maxResults: 50
-      },
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+    type YTPlaylist = {
+      id: string;
+      snippet?: any;
+      contentDetails?: any;
+    };
+    let playlists: YTPlaylist[] = [];
+    let nextPageToken: string | undefined = undefined;
+    do {
+      const ytRes: { data: { items: YTPlaylist[]; nextPageToken?: string } } = await axios.get('https://www.googleapis.com/youtube/v3/playlists', {
+        params: {
+          part: 'snippet,contentDetails',
+          mine: true,
+          maxResults: 50,
+          pageToken: nextPageToken
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      playlists = playlists.concat(ytRes.data.items);
+      nextPageToken = ytRes.data.nextPageToken;
+    } while (nextPageToken);
+
+    // Upsert playlists into DB and collect their DB ids
+    const playlistIdMap: { [yt_playlist_id: string]: number } = {};
+    for (const pl of playlists) {
+      const { id: yt_playlist_id, snippet, contentDetails } = pl;
+      const title = snippet?.title || null;
+      const description = snippet?.description || null;
+      const thumbnail_url = snippet?.thumbnails?.default?.url || null;
+      const upsert = await pool.query(
+        `INSERT INTO playlists_youtube (user_id, yt_playlist_id, title, description, thumbnail_url, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         ON CONFLICT (user_id, yt_playlist_id) DO UPDATE SET title = $3, description = $4, thumbnail_url = $5, updated_at = NOW()
+         RETURNING id`,
+        [userId, yt_playlist_id, title, description, thumbnail_url]
+      );
+      playlistIdMap[yt_playlist_id] = upsert.rows[0].id;
+    }
+
+    // Fetch and upsert playlist items for each playlist
+    type YTPlaylistItem = {
+      snippet?: any;
+      contentDetails?: any;
+    };
+    for (const pl of playlists) {
+      const yt_playlist_id = pl.id;
+      const playlist_db_id = playlistIdMap[yt_playlist_id];
+      let items: YTPlaylistItem[] = [];
+      let nextItemPage: string | undefined = undefined;
+      do {
+        const itemsRes: { data: { items: YTPlaylistItem[]; nextPageToken?: string } } = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
+          params: {
+            part: 'snippet,contentDetails',
+            playlistId: yt_playlist_id,
+            maxResults: 50,
+            pageToken: nextItemPage
+          },
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+        items = items.concat(itemsRes.data.items);
+        nextItemPage = itemsRes.data.nextPageToken;
+      } while (nextItemPage);
+
+      for (const item of items) {
+        const { snippet, contentDetails } = item;
+        const yt_video_id = contentDetails?.videoId || null;
+        if (!yt_video_id) continue;
+        const title = snippet?.title || null;
+        const description = snippet?.description || null;
+        const published_at = snippet?.publishedAt ? new Date(snippet.publishedAt) : null;
+        const channel_title = snippet?.videoOwnerChannelTitle || snippet?.channelTitle || null;
+        const channel_id = snippet?.videoOwnerChannelId || snippet?.channelId || null;
+        const thumbnail_url = snippet?.thumbnails?.default?.url || null;
+        const position = snippet?.position ?? null;
+        // Upsert item
+        await pool.query(
+          `INSERT INTO playlist_items_youtube (playlist_id, yt_video_id, title, description, published_at, channel_title, channel_id, thumbnail_url, position, added_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+           ON CONFLICT (playlist_id, yt_video_id) DO UPDATE SET title = $3, description = $4, published_at = $5, channel_title = $6, channel_id = $7, thumbnail_url = $8, position = $9, added_at = NOW()`,
+          [playlist_db_id, yt_video_id, title, description, published_at, channel_title, channel_id, thumbnail_url, position]
+        );
       }
-    });
-    console.log(`[YouTube Playlists] Success for userId: ${userId}, playlists: ${ytRes.data.items.length}`);
-    res.json({ playlists: ytRes.data.items });
+    }
+
+    // Return playlists and items from DB
+    const dbPlaylistsRes = await pool.query(
+      `SELECT p.*, (
+         SELECT json_agg(pi) FROM (
+           SELECT * FROM playlist_items_youtube WHERE playlist_id = p.id ORDER BY position
+         ) pi
+       ) AS items
+       FROM playlists_youtube p WHERE user_id = $1 ORDER BY p.title`,
+      [userId]
+    );
+    res.json({ playlists: dbPlaylistsRes.rows });
   } catch (err) {
     const errorData = (err as any)?.response?.data || (err as any)?.message || err;
     console.error(`[YouTube Playlists] Error for userId: ${userId}:`, errorData);
