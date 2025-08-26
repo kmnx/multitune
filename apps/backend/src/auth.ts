@@ -1,4 +1,3 @@
-
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -28,13 +27,33 @@ function authenticateJWT(req: AuthenticatedRequest, res: Response, next: NextFun
     next();
   });
 }
-// Fetch YouTube playlists for the authenticated user
-router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
+
+
+// --- YouTube linked status endpoint ---
+router.get('/api/youtube/linked', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user.userId;
+    const result = await pool.query('SELECT 1 FROM user_services WHERE user_id = $1 AND service = $2', [userId, 'youtube']);
+    const isLinked = result.rows.length > 0;
+    console.log(`[YouTube Linked Check] userId: ${userId}, linked: ${isLinked}`);
+    res.json({ linked: isLinked });
+  } catch (err) {
+    console.error('[YouTube Linked Check] Error:', err);
+    res.status(500).json({ error: 'Failed to check YouTube link status' });
+  }
+});
+
+// Fetch YouTube playlists for the authenticated user
+router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user.userId;
+  console.log(`[YouTube Playlists] Called for userId: ${userId}`);
+  try {
     // Get YouTube access token from user_services
     const result = await pool.query('SELECT access_token FROM user_services WHERE user_id = $1 AND service = $2', [userId, 'youtube']);
-    if (!result.rows.length) return res.status(400).json({ error: 'YouTube not linked' });
+    if (!result.rows.length) {
+      console.log(`[YouTube Playlists] No YouTube link found for userId: ${userId}`);
+      return res.status(400).json({ error: 'YouTube not linked' });
+    }
     const accessToken = result.rows[0].access_token;
     // Fetch playlists from YouTube Data API
     const ytRes = await axios.get('https://www.googleapis.com/youtube/v3/playlists', {
@@ -47,74 +66,23 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
         Authorization: `Bearer ${accessToken}`
       }
     });
+    console.log(`[YouTube Playlists] Success for userId: ${userId}, playlists: ${ytRes.data.items.length}`);
     res.json({ playlists: ytRes.data.items });
   } catch (err) {
-            const errorData = (err as any)?.response?.data || (err as any)?.message || err;
-        console.error('YouTube playlist fetch error:', errorData);
-        res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: errorData });
+    const errorData = (err as any)?.response?.data || (err as any)?.message || err;
+    console.error(`[YouTube Playlists] Error for userId: ${userId}:`, errorData);
+    res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: errorData });
   }
 });
 
 
-// YouTube OAuth setup
-passport.use('youtube', new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID || '',
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  callbackURL: process.env.YOUTUBE_CALLBACK_URL || 'http://localhost:4000/auth/youtube/callback',
-  scope: [
-    'https://www.googleapis.com/auth/youtube.readonly',
-    'profile',
-    'email'
-  ],
-  passReqToCallback: true
-}, async (req: any, accessToken: string, refreshToken: string, profile: Profile, done: any) => {
-  try {
-    // Find user by email (assume already logged in)
-    const email = profile.emails && profile.emails[0]?.value;
-    let userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    let user = userRes.rows[0];
-    if (!user) {
-      // Optionally, create user if not found
-      const username = profile.displayName || email || `yt_${profile.id}`;
-      const insertRes = await pool.query(
-        'INSERT INTO users (username, email) VALUES ($1, $2) RETURNING *',
-        [username, email]
-      );
-      user = insertRes.rows[0];
-    }
-    // Upsert user_services
-    await pool.query(
-      `INSERT INTO user_services (user_id, service, access_token, refresh_token, expires_at)
-       VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 hour')
-       ON CONFLICT (user_id, service) DO UPDATE SET access_token = $3, refresh_token = $4, updated_at = NOW()`,
-      [user.id, 'youtube', accessToken, refreshToken]
-    );
-    return done(null, user);
-  } catch (err) {
-    return done(err);
-  }
-}));
-// YouTube OAuth routes
-router.get('/youtube', passport.authenticate('youtube', { scope: [
-  'https://www.googleapis.com/auth/youtube.readonly',
-  'profile',
-  'email'
-] }));
-
-router.get('/youtube/callback', passport.authenticate('youtube', { session: false, failureRedirect: '/' }), (req, res) => {
-  // Issue JWT and redirect or respond
-  const user = req.user as any;
-  const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  res.redirect(`${frontendUrl}/?token=${token}&linked=youtube`);
-});
 
 
 
 
 
 
-// Place after router declaration
+
 
 // YouTube OAuth setup
 passport.use('youtube', new GoogleStrategy({

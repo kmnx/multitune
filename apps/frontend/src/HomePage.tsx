@@ -75,7 +75,13 @@ const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   );
 };
 
-const defaultServices = [
+type Service = {
+  name: string;
+  icon: string;
+  linked: boolean;
+};
+
+const defaultServices: Service[] = [
   { name: 'YouTube', icon: '📺', linked: false },
   { name: 'Spotify', icon: '🎵', linked: false },
 ];
@@ -83,17 +89,85 @@ const defaultServices = [
 const HomePage = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [services, setServices] = useState(defaultServices);
+  const [services, setServices] = useState<Service[]>(defaultServices);
+  const [ytPlaylists, setYtPlaylists] = useState<any[] | null>(null);
+  const [ytLoading, setYtLoading] = useState(false);
+  const [ytError, setYtError] = useState<string | null>(null);
+  const [ytSidebarOpen, setYtSidebarOpen] = useState(false);
 
   // Handler for clicking a service in the sidebar
-  const handleServiceClick = (service: typeof defaultServices[0]) => {
-    if (service.name === 'YouTube' && !service.linked) {
-      // Start YouTube OAuth flow
-      window.location.href = 'http://localhost:4000/auth/youtube';
+
+  // Check if YouTube is linked for the current user
+  const checkYouTubeLinked = async (): Promise<boolean> => {
+    try {
+      const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      return !!data.linked;
+    } catch {
+      return false;
+    }
+  };
+
+  // Fetch YouTube playlists and update state
+  const fetchYouTubePlaylists = async () => {
+    setYtLoading(true);
+    setYtError(null);
+    try {
+      const res = await fetch('http://localhost:4000/auth/api/youtube/playlists', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setYtError(data.error);
+        setYtPlaylists(null);
+      } else {
+        setYtPlaylists(data.playlists);
+      }
+    } catch {
+      setYtError('Failed to fetch playlists');
+      setYtPlaylists(null);
+    } finally {
+      setYtLoading(false);
+    }
+  };
+
+  // Handler for clicking a service in the sidebar
+  const handleServiceClick = async (service: Service) => {
+    if (service.name === 'YouTube') {
+      // Check if already linked
+      const linked = await checkYouTubeLinked();
+      setServices(svcs => svcs.map(s => s.name === 'YouTube' ? { ...s, linked } : s));
+      if (!linked) {
+        // Start YouTube OAuth flow
+        window.location.href = 'http://localhost:4000/auth/youtube';
+        return;
+      }
+      // If already linked, open sidebar and fetch playlists
+      setYtSidebarOpen(open => !open);
+      setSelectedService(service.name);
+      if (!ytSidebarOpen) {
+        await fetchYouTubePlaylists();
+      }
       return;
     }
     setSelectedService(service.name);
   };
+
+  // After YouTube OAuth, check if we are now linked and fetch playlists
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('youtube_linked') === '1') {
+      // Remove param from URL
+      url.searchParams.delete('youtube_linked');
+      window.history.replaceState({}, document.title, url.pathname);
+      setServices(svcs => svcs.map(s => s.name === 'YouTube' ? { ...s, linked: true } : s));
+      setYtSidebarOpen(true);
+      setSelectedService('YouTube');
+      fetchYouTubePlaylists();
+    }
+  }, []);
 
   useEffect(() => {
     // Simple check: token exists
@@ -113,27 +187,48 @@ const HomePage = () => {
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
           {services.map(service => (
-            <div
-              key={service.name}
-              onClick={() => handleServiceClick(service)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '10px 24px',
-                background: selectedService === service.name ? '#393e6e' : 'none',
-                cursor: 'pointer',
-                borderLeft: selectedService === service.name ? '4px solid #eebf63' : '4px solid transparent',
-                fontWeight: selectedService === service.name ? 600 : 400,
-                fontSize: 17,
-                marginBottom: 2,
-                borderRadius: 4,
-                transition: 'background 0.2s',
-              }}
-            >
-              <span style={{ fontSize: 22, marginRight: 12 }}>{service.icon}</span>
-              {service.name}
-              {!service.linked && (
-                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#eebf63', fontWeight: 500 }}>Link</span>
+            <div key={service.name}>
+              <div
+                onClick={() => handleServiceClick(service)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 24px',
+                  background: selectedService === service.name ? '#393e6e' : 'none',
+                  cursor: 'pointer',
+                  borderLeft: selectedService === service.name ? '4px solid #eebf63' : '4px solid transparent',
+                  fontWeight: selectedService === service.name ? 600 : 400,
+                  fontSize: 17,
+                  marginBottom: 2,
+                  borderRadius: 4,
+                  transition: 'background 0.2s',
+                }}
+              >
+                <span style={{ fontSize: 22, marginRight: 12 }}>{service.icon}</span>
+                {service.name}
+                {!service.linked && (
+                  <span style={{ marginLeft: 'auto', fontSize: 12, color: '#eebf63', fontWeight: 500 }}>Link</span>
+                )}
+              </div>
+              {/* Fold out YouTube playlists under the sidebar item */}
+              {service.name === 'YouTube' && service.linked && ytSidebarOpen && (
+                <div style={{ background: '#2e3350', padding: '8px 0 8px 32px', borderRadius: 4, margin: '2px 8px 8px 8px' }}>
+                  {ytLoading && <div style={{ color: '#fff' }}>Loading playlists...</div>}
+                  {ytError && <div style={{ color: 'red' }}>{ytError}</div>}
+                  {ytPlaylists && ytPlaylists.length > 0 ? (
+                    <ul style={{ paddingLeft: 0, listStyle: 'none', margin: 0 }}>
+                      {ytPlaylists.map((pl: any) => (
+                        <li key={pl.id} style={{ marginBottom: 8 }}>
+                          <a href={`https://www.youtube.com/playlist?list=${pl.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#eebf63', textDecoration: 'none', fontWeight: 500 }}>
+                            {pl.snippet.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : ytPlaylists && ytPlaylists.length === 0 && !ytLoading ? (
+                    <em style={{ color: '#fff' }}>No playlists found.</em>
+                  ) : null}
+                </div>
               )}
             </div>
           ))}
@@ -154,11 +249,10 @@ const HomePage = () => {
             </div>
           </div>
         )}
-        {selectedService && (
+        {selectedService && selectedService !== 'YouTube' && (
           <div>
             <h2 style={{ color: '#232946', fontWeight: 700 }}>{selectedService} Playlists</h2>
             <div style={{ marginTop: 16, color: '#393e6e' }}>
-              {/* Placeholder for playlists/tracks */}
               <em>Playlists and tracks from {selectedService} will appear here.</em>
             </div>
           </div>
