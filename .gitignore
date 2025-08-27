@@ -1,3 +1,16 @@
 
 node_modules
 apps/backend/.env
+*.
+
+# binaries
+bin/
+dist/
+lib/
+
+# editors
+*.swp
+.idea/
+.vs/
+.vscode/
+.DS_Store

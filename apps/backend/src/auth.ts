@@ -45,45 +45,12 @@ router.get('/api/youtube/linked', authenticateJWT, async (req: AuthenticatedRequ
 
 // Fetch YouTube playlists for the authenticated user
 router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
-
-// Fetch items for a specific playlist from our own database (generic DB API)
-router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user.userId;
-  const playlistId = req.params.id;
-  try {
-    // Ensure the playlist belongs to the user
-    const playlistRes = await pool.query('SELECT * FROM playlists_youtube WHERE id = $1 AND user_id = $2', [playlistId, userId]);
-    if (!playlistRes.rows.length) {
-      return res.status(404).json({ error: 'Playlist not found' });
-    }
-    // Fetch items ordered by position (or upload date as fallback)
-    const itemsRes = await pool.query(
-      `SELECT * FROM playlist_items_youtube WHERE playlist_id = $1 ORDER BY position ASC, published_at DESC`,
-      [playlistId]
-    );
-    res.json({ items: itemsRes.rows });
-  } catch (err) {
-    console.error('[DB Playlist Items] Error:', err);
-    res.status(500).json({ error: 'Failed to fetch playlist items' });
-  }
-});
   const userId = req.user.userId;
   console.log(`[YouTube Playlists] Called for userId: ${userId}`);
-  try {
-    // Get YouTube access token from user_services
-    const result = await pool.query('SELECT access_token FROM user_services WHERE user_id = $1 AND service = $2', [userId, 'youtube']);
-    if (!result.rows.length) {
-      console.log(`[YouTube Playlists] No YouTube link found for userId: ${userId}`);
-      return res.status(400).json({ error: 'YouTube not linked' });
-    }
-    const accessToken = result.rows[0].access_token;
 
-    // Fetch playlists from YouTube Data API
-    type YTPlaylist = {
-      id: string;
-      snippet?: any;
-      contentDetails?: any;
-    };
+  // Helper to fetch playlists from YouTube
+  async function fetchPlaylistsWithToken(accessToken: string) {
+    type YTPlaylist = { id: string; snippet?: any; contentDetails?: any };
     let playlists: YTPlaylist[] = [];
     let nextPageToken: string | undefined = undefined;
     do {
@@ -101,6 +68,52 @@ router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: Authentica
       playlists = playlists.concat(ytRes.data.items);
       nextPageToken = ytRes.data.nextPageToken;
     } while (nextPageToken);
+    return playlists;
+  }
+
+  // Helper to refresh access token
+  async function refreshAccessToken(refreshToken: string) {
+    const params = new URLSearchParams();
+    params.append('client_id', process.env.GOOGLE_CLIENT_ID || '');
+    params.append('client_secret', process.env.GOOGLE_CLIENT_SECRET || '');
+    params.append('refresh_token', refreshToken);
+    params.append('grant_type', 'refresh_token');
+    const resp = await axios.post('https://oauth2.googleapis.com/token', params);
+    return resp.data;
+  }
+
+  try {
+    // Get YouTube access token and refresh token from user_services
+    const result = await pool.query('SELECT access_token, refresh_token FROM user_services WHERE user_id = $1 AND service = $2', [userId, 'youtube']);
+    if (!result.rows.length) {
+      console.log(`[YouTube Playlists] No YouTube link found for userId: ${userId}`);
+      return res.status(400).json({ error: 'YouTube not linked' });
+    }
+    let accessToken = result.rows[0].access_token;
+    const refreshToken = result.rows[0].refresh_token;
+    let playlists;
+    try {
+      playlists = await fetchPlaylistsWithToken(accessToken);
+    } catch (err: any) {
+      // If 401, try to refresh token
+      if (err.response && err.response.status === 401 && refreshToken) {
+        try {
+          const tokenData = await refreshAccessToken(refreshToken);
+          accessToken = tokenData.access_token;
+          // Update DB with new access token
+          await pool.query('UPDATE user_services SET access_token = $1, updated_at = NOW() WHERE user_id = $2 AND service = $3', [accessToken, userId, 'youtube']);
+          // Retry fetching playlists
+          playlists = await fetchPlaylistsWithToken(accessToken);
+        } catch (refreshErr) {
+          console.error('[YouTube Playlists] Token refresh failed:', refreshErr);
+          return res.status(401).json({ error: 'YouTube authentication expired. Please re-link your account.' });
+        }
+      } else {
+        const errorData = err?.response?.data || err?.message || err;
+        console.error(`[YouTube Playlists] Error for userId: ${userId}:`, errorData);
+        return res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: errorData });
+      }
+    }
 
     // Upsert playlists into DB and collect their DB ids
     const playlistIdMap: { [yt_playlist_id: string]: number } = {};
@@ -120,10 +133,7 @@ router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: Authentica
     }
 
     // Fetch and upsert playlist items for each playlist
-    type YTPlaylistItem = {
-      snippet?: any;
-      contentDetails?: any;
-    };
+    type YTPlaylistItem = { snippet?: any; contentDetails?: any };
     for (const pl of playlists) {
       const yt_playlist_id = pl.id;
       const playlist_db_id = playlistIdMap[yt_playlist_id];
@@ -181,6 +191,28 @@ router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: Authentica
     const errorData = (err as any)?.response?.data || (err as any)?.message || err;
     console.error(`[YouTube Playlists] Error for userId: ${userId}:`, errorData);
     res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: errorData });
+  }
+});
+
+// Fetch items for a specific playlist from our own database (generic DB API)
+router.get('/api/db/playlist/:id/items', authenticateJWT, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user.userId;
+  const playlistId = req.params.id;
+  try {
+    // Ensure the playlist belongs to the user
+    const playlistRes = await pool.query('SELECT * FROM playlists_youtube WHERE id = $1 AND user_id = $2', [playlistId, userId]);
+    if (!playlistRes.rows.length) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+    // Fetch items ordered by position (or upload date as fallback)
+    const itemsRes = await pool.query(
+      `SELECT * FROM playlist_items_youtube WHERE playlist_id = $1 ORDER BY position ASC, published_at DESC`,
+      [playlistId]
+    );
+    res.json({ items: itemsRes.rows });
+  } catch (err) {
+    console.error('[DB Playlist Items] Error:', err);
+    res.status(500).json({ error: 'Failed to fetch playlist items' });
   }
 });
 

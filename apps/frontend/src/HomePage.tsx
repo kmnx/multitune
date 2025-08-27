@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import YouTube from 'react-youtube';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -98,6 +99,9 @@ const HomePage = () => {
   const [playlistItems, setPlaylistItems] = useState<any[] | null>(null);
   const [playlistItemsLoading, setPlaylistItemsLoading] = useState(false);
   const [playlistItemsError, setPlaylistItemsError] = useState<string | null>(null);
+  // For YouTube player state
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [playerRef, setPlayerRef] = useState<any>(null);
   // Fetch items for a playlist by DB id
   const fetchPlaylistItems = async (playlist: any) => {
     setSelectedPlaylist(playlist);
@@ -309,6 +313,7 @@ const HomePage = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                 <thead>
                   <tr style={{ background: '#f7f7fa', color: '#232946', fontWeight: 700 }}>
+                    <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}></th>
                     <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Title</th>
                     <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Upload Date</th>
                     <th style={{ padding: '8px 12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>Channel</th>
@@ -317,14 +322,62 @@ const HomePage = () => {
                 </thead>
                 <tbody>
                   {playlistItems.map((item: any) => (
-                    <tr key={item.yt_video_id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '6px 12px', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <a href={`https://www.youtube.com/watch?v=${item.yt_video_id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#232946', textDecoration: 'underline' }}>{item.title}</a>
-                      </td>
-                      <td style={{ padding: '6px 12px' }}>{item.published_at ? new Date(item.published_at).toLocaleDateString() : ''}</td>
-                      <td style={{ padding: '6px 12px' }}>{item.channel_title || ''}</td>
-                      <td style={{ padding: '6px 12px', color: '#aaa' }}>-</td>
-                    </tr>
+                    <React.Fragment key={item.yt_video_id}>
+                      <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ padding: '6px 6px', width: 36 }}>
+                          <button
+                            aria-label={playingVideoId === item.yt_video_id ? 'Pause' : 'Play'}
+                            onClick={() => {
+                              if (playingVideoId === item.yt_video_id) {
+                                setPlayingVideoId(null);
+                                if (playerRef) playerRef.pauseVideo && playerRef.pauseVideo();
+                              } else {
+                                setPlayingVideoId(item.yt_video_id);
+                              }
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 18,
+                              color: '#232946',
+                              outline: 'none',
+                            }}
+                          >
+                            {playingVideoId === item.yt_video_id ? '⏸️' : '▶️'}
+                          </button>
+                        </td>
+                        <td style={{ padding: '6px 12px', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <a href={`https://www.youtube.com/watch?v=${item.yt_video_id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#232946', textDecoration: 'underline' }}>{item.title}</a>
+                        </td>
+                        <td style={{ padding: '6px 12px' }}>{item.published_at ? new Date(item.published_at).toLocaleDateString() : ''}</td>
+                        <td style={{ padding: '6px 12px' }}>{item.channel_title || ''}</td>
+                        <td style={{ padding: '6px 12px', color: '#aaa' }}>-</td>
+                      </tr>
+                      {playingVideoId === item.yt_video_id && (
+                        <tr>
+                          <td colSpan={5} style={{ padding: 0, background: '#f7f7fa', transition: 'all 0.3s', borderBottom: '1px solid #eebf63' }}>
+                            <div style={{ margin: '0 0 12px 36px', padding: 0, overflow: 'hidden', maxWidth: 400, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                              <YouTube
+                                videoId={item.yt_video_id}
+                                opts={{
+                                  height: '80',
+                                  width: '400',
+                                  playerVars: {
+                                    autoplay: 1,
+                                    controls: 1,
+                                    modestbranding: 1,
+                                    rel: 0,
+                                  },
+                                }}
+                                onReady={e => setPlayerRef(e.target)}
+                                onEnd={() => setPlayingVideoId(null)}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
