@@ -3,12 +3,12 @@
 A running list of next steps and ideas for Multitune.
 
 ## Next Steps
-- [ ] Design initial database schema (users, tracks, playlists, sources)
-- [ ] Set up Postgres connection in backend
-- [ ] Implement user authentication (signup/login)
-- [ ] Create CRUD API for playlists and tracks
-- [ ] Build basic React UI (login, library, playlist view)
-- [ ] Connect frontend to backend API
+- [x] Design initial database schema (users, tracks, playlists, sources)
+- [x] Set up Postgres connection in backend
+- [x] Implement user authentication (signup/login)
+- [x] Create CRUD API for playlists and tracks
+- [x] Build basic React UI (login, library, playlist view)
+- [x] Connect frontend to backend API
 - [ ] Add import/export for one source (e.g., YouTube)
 
 ## Ideas / Backlog
@@ -19,3 +19,7 @@ A running list of next steps and ideas for Multitune.
 - [ ] Dark mode
 
 Update this file as you go!
+
+
+
+- [ ] Setup for CI/CD
