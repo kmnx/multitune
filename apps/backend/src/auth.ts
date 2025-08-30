@@ -1,5 +1,3 @@
-// auth.ts backup because who knows what the copilot has been drinking
-
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -50,8 +48,8 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
   const userId = req.user.userId;
   console.log(`[YouTube Playlists] Called for userId: ${userId}`);
 
-  // Helper to fetch playlists from YouTube
-  async function fetchPlaylistsWithToken(accessToken: string) {
+  // Helper to fetch playlists from YouTube, but only those not in DB
+  async function fetchNewPlaylistsWithToken(accessToken: string, existingIds: Set<string>) {
     type YTPlaylist = { id: string; snippet?: any; contentDetails?: any };
     let playlists: YTPlaylist[] = [];
     let nextPageToken: string | undefined = undefined;
@@ -67,7 +65,8 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
           Authorization: `Bearer ${accessToken}`
         }
       });
-      playlists = playlists.concat(ytRes.data.items);
+      // Only add playlists not in DB
+      playlists = playlists.concat(ytRes.data.items.filter(pl => !existingIds.has(pl.id)));
       nextPageToken = ytRes.data.nextPageToken;
     } while (nextPageToken);
     return playlists;
@@ -93,19 +92,28 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
     }
     let accessToken = result.rows[0].access_token;
     const refreshToken = result.rows[0].refresh_token;
-    let playlists;
+
+
+    // 1. Get all existing playlist IDs for this user
+    const existingPlaylistsRes = await pool.query('SELECT yt_playlist_id, id FROM playlists_youtube WHERE user_id = $1', [userId]);
+    const existingPlaylistIds = new Set(existingPlaylistsRes.rows.map((row: any) => row.yt_playlist_id));
+    const playlistIdMap: { [yt_playlist_id: string]: number } = {};
+    for (const row of existingPlaylistsRes.rows) {
+      playlistIdMap[row.yt_playlist_id] = row.id;
+    }
+
+    // 2. Fetch only new playlists from YouTube
+    let newPlaylists;
     try {
-      playlists = await fetchPlaylistsWithToken(accessToken);
+      newPlaylists = await fetchNewPlaylistsWithToken(accessToken, existingPlaylistIds);
     } catch (err: any) {
       // If 401, try to refresh token
       if (err.response && err.response.status === 401 && refreshToken) {
         try {
           const tokenData = await refreshAccessToken(refreshToken);
           accessToken = tokenData.access_token;
-          // Update DB with new access token
           await pool.query('UPDATE user_services SET access_token = $1, updated_at = NOW() WHERE user_id = $2 AND service = $3', [accessToken, userId, 'youtube']);
-          // Retry fetching playlists
-          playlists = await fetchPlaylistsWithToken(accessToken);
+          newPlaylists = await fetchNewPlaylistsWithToken(accessToken, existingPlaylistIds);
         } catch (refreshErr) {
           console.error('[YouTube Playlists] Token refresh failed:', refreshErr);
           return res.status(401).json({ error: 'YouTube authentication expired. Please re-link your account.' });
@@ -117,9 +125,28 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
       }
     }
 
-    // Upsert playlists into DB and collect their DB ids
-    const playlistIdMap: { [yt_playlist_id: string]: number } = {};
-    for (const pl of playlists) {
+    // Helper to fetch full video details for a list of videoIds
+    async function fetchVideoDetails(videoIds: string[], accessToken: string) {
+      if (videoIds.length === 0) return [];
+      const details: any[] = [];
+      for (let i = 0; i < videoIds.length; i += 50) {
+        const batch = videoIds.slice(i, i + 50);
+        const resp = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+          params: {
+            part: 'snippet,contentDetails',
+            id: batch.join(',')
+          },
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+        details.push(...resp.data.items);
+      }
+      return details;
+    }
+
+    // 3. Upsert new playlists and update playlistIdMap
+    for (const pl of newPlaylists) {
       const { id: yt_playlist_id, snippet, contentDetails } = pl;
       const title = snippet?.title || null;
       const description = snippet?.description || null;
@@ -134,17 +161,24 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
       playlistIdMap[yt_playlist_id] = upsert.rows[0].id;
     }
 
-    // Fetch and upsert playlist items for each playlist
+    // 4. For all playlists (existing and new), fetch only new items
     type YTPlaylistItem = { snippet?: any; contentDetails?: any };
-    for (const pl of playlists) {
-      const yt_playlist_id = pl.id;
+    for (const yt_playlist_id of Object.keys(playlistIdMap)) {
       const playlist_db_id = playlistIdMap[yt_playlist_id];
-      let items: YTPlaylistItem[] = [];
+      // Get all existing video IDs for this playlist
+      const existingItemsRes = await pool.query('SELECT yt_video_id FROM playlist_items_youtube WHERE playlist_id = $1', [playlist_db_id]);
+      const existingVideoIds = new Set(existingItemsRes.rows.map((row: any) => row.yt_video_id));
+
+      // Determine if this is the initial sync (no items in DB)
+      const isInitialSync = existingVideoIds.size === 0;
+      const part = isInitialSync ? 'snippet,contentDetails' : 'contentDetails';
       let nextItemPage: string | undefined = undefined;
+      const newVideoIds: string[] = [];
+      const newItems: any[] = [];
       do {
         const itemsRes: { data: { items: YTPlaylistItem[]; nextPageToken?: string } } = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
           params: {
-            part: 'snippet,contentDetails',
+            part,
             playlistId: yt_playlist_id,
             maxResults: 50,
             pageToken: nextItemPage
@@ -153,14 +187,34 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
             Authorization: `Bearer ${accessToken}`
           }
         });
-        items = items.concat(itemsRes.data.items);
+        // Only process new items
+        for (const item of itemsRes.data.items) {
+          const yt_video_id = item.contentDetails?.videoId;
+          if (yt_video_id && !existingVideoIds.has(yt_video_id)) {
+            newVideoIds.push(yt_video_id);
+            newItems.push(item);
+          }
+        }
         nextItemPage = itemsRes.data.nextPageToken;
       } while (nextItemPage);
 
-      for (const item of items) {
-        const { snippet, contentDetails } = item;
-        const yt_video_id = contentDetails?.videoId || null;
+      // If not initial sync, fetch full details for new videos
+      let videoDetailsMap: { [videoId: string]: any } = {};
+      if (!isInitialSync && newVideoIds.length > 0) {
+        const details = await fetchVideoDetails(newVideoIds, accessToken);
+        for (const vid of details) {
+          videoDetailsMap[vid.id] = vid;
+        }
+      }
+
+      // Upsert new items
+      for (const item of newItems) {
+        const yt_video_id = item.contentDetails?.videoId || null;
         if (!yt_video_id) continue;
+        let snippet = item.snippet;
+        if (!isInitialSync && videoDetailsMap[yt_video_id]) {
+          snippet = videoDetailsMap[yt_video_id].snippet;
+        }
         const title = snippet?.title || null;
         const description = snippet?.description || null;
         const published_at = snippet?.publishedAt ? new Date(snippet.publishedAt) : null;
@@ -168,7 +222,6 @@ router.get('/api/youtube/playlists', authenticateJWT, async (req: AuthenticatedR
         const channel_id = snippet?.videoOwnerChannelId || snippet?.channelId || null;
         const thumbnail_url = snippet?.thumbnails?.default?.url || null;
         const position = snippet?.position ?? null;
-        // Upsert item
         await pool.query(
           `INSERT INTO playlist_items_youtube (playlist_id, yt_video_id, title, description, published_at, channel_title, channel_id, thumbnail_url, position, added_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
@@ -237,7 +290,7 @@ passport.use('youtube', new GoogleStrategy({
     'profile',
     'email'
   ],
-  passReqToCallback: true
+  passReqToCallback: true,
 }, async (req: any, accessToken: string, refreshToken: string, profile: Profile, done: any) => {
   try {
     // Find user by email (assume already logged in)
@@ -266,38 +319,19 @@ passport.use('youtube', new GoogleStrategy({
   }
 }));
 
-// Fetch YouTube playlists for the authenticated user
-router.get('/api/youtube/playlists', authenticateJWT, async (req: any, res: any) => {
-  try {
-    const userId = req.user.userId;
-    // Get YouTube access token from user_services
-    const result = await pool.query('SELECT access_token FROM user_services WHERE user_id = $1 AND service = $2', [userId, 'youtube']);
-    if (!result.rows.length) return res.status(400).json({ error: 'YouTube not linked' });
-    const accessToken = result.rows[0].access_token;
-    // Fetch playlists from YouTube Data API
-    const ytRes = await axios.get('https://www.googleapis.com/youtube/v3/playlists', {
-      params: {
-        part: 'snippet,contentDetails',
-        mine: true,
-        maxResults: 50
-      },
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    res.json({ playlists: ytRes.data.items });
-  } catch (err: any) {
-    console.error('YouTube playlist fetch error:', err?.response?.data || err);
-    res.status(500).json({ error: 'Failed to fetch YouTube playlists', details: err?.response?.data || err.message });
-  }
-});
+
 
 // YouTube OAuth routes
-router.get('/youtube', passport.authenticate('youtube', { scope: [
-  'https://www.googleapis.com/auth/youtube.readonly',
-  'profile',
-  'email'
-] }));
+router.get('/youtube', passport.authenticate('youtube', Object.assign({
+  scope: [
+    'https://www.googleapis.com/auth/youtube.readonly',
+    'profile',
+    'email'
+  ]
+}, {
+  accessType: 'offline',
+  prompt: 'consent'
+}) as any));
 
 router.get('/youtube/callback', passport.authenticate('youtube', { session: false, failureRedirect: '/' }), (req, res) => {
   // Issue JWT and redirect or respond
