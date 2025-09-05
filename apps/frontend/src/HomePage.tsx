@@ -129,19 +129,92 @@ const HomePage = () => {
 
   // Handler for clicking a service in the sidebar
 
+
   // Check if YouTube is linked for the current user
   const checkYouTubeLinked = async (): Promise<boolean> => {
-      try {
-        const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const data = await res.json();
-        console.log('[checkYouTubeLinked] Response:', data);
-        return !!data.linked;
-      } catch (err) {
-        console.error('[checkYouTubeLinked] Error:', err);
-        return false;
+    try {
+      const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      console.log('[checkYouTubeLinked] Response:', data);
+      return !!data.linked;
+    } catch (err) {
+      console.error('[checkYouTubeLinked] Error:', err);
+      return false;
+    }
+  };
+
+  // Check if Spotify is linked for the current user
+  const checkSpotifyLinked = async (): Promise<boolean> => {
+    try {
+      const res = await fetch('http://localhost:4000/auth/api/spotify/linked', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      console.log('[checkSpotifyLinked] Response:', data);
+      return !!data.linked;
+    } catch (err) {
+      console.error('[checkSpotifyLinked] Error:', err);
+      return false;
+    }
+  };
+
+  // Fetch Spotify playlists and update state
+  const [spotifyPlaylists, setSpotifyPlaylists] = useState<any[] | null>(null);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [spotifyError, setSpotifyError] = useState<string | null>(null);
+  const [spotifySidebarOpen, setSpotifySidebarOpen] = useState(false);
+  const [selectedSpotifyPlaylist, setSelectedSpotifyPlaylist] = useState<any | null>(null);
+  const [spotifyPlaylistItems, setSpotifyPlaylistItems] = useState<any[] | null>(null);
+  const [spotifyPlaylistItemsLoading, setSpotifyPlaylistItemsLoading] = useState(false);
+  const [spotifyPlaylistItemsError, setSpotifyPlaylistItemsError] = useState<string | null>(null);
+
+  const fetchSpotifyPlaylists = async () => {
+    setSpotifyLoading(true);
+    setSpotifyError(null);
+    try {
+      const res = await fetch('http://localhost:4000/auth/api/spotify/playlists', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setSpotifyError(data.error);
+        setSpotifyPlaylists(null);
+      } else {
+        setSpotifyPlaylists(data.playlists);
       }
+    } catch {
+      setSpotifyError('Failed to fetch playlists');
+      setSpotifyPlaylists(null);
+    } finally {
+      setSpotifyLoading(false);
+    }
+  };
+
+  // Fetch items for a Spotify playlist by DB id
+  const fetchSpotifyPlaylistItems = async (playlist: any) => {
+    setSelectedSpotifyPlaylist(playlist);
+    setSpotifyPlaylistItems(null);
+    setSpotifyPlaylistItemsLoading(true);
+    setSpotifyPlaylistItemsError(null);
+    try {
+      const res = await fetch(`http://localhost:4000/auth/api/db/spotify/playlist/${playlist.id}/items`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setSpotifyPlaylistItemsError(data.error);
+        setSpotifyPlaylistItems(null);
+      } else {
+        setSpotifyPlaylistItems(data.items);
+      }
+    } catch {
+      setSpotifyPlaylistItemsError('Failed to fetch playlist items');
+      setSpotifyPlaylistItems(null);
+    } finally {
+      setSpotifyPlaylistItemsLoading(false);
+    }
   };
 
   // Fetch YouTube playlists and update state
@@ -170,20 +243,32 @@ const HomePage = () => {
   // Handler for clicking a service in the sidebar
   const handleServiceClick = async (service: Service) => {
     if (service.name === 'YouTube') {
-      // Check if already linked
       console.log('[YouTube Click] Checking if linked...');
       const linked = await checkYouTubeLinked();
       setServices(svcs => svcs.map(s => s.name === 'YouTube' ? { ...s, linked } : s));
       if (!linked) {
-        // Start YouTube OAuth flow
         window.location.href = 'http://localhost:4000/auth/youtube';
         return;
       }
-      // If already linked, open sidebar and fetch playlists
       setYtSidebarOpen(open => !open);
       setSelectedService(service.name);
       if (!ytSidebarOpen) {
         await fetchYouTubePlaylists();
+      }
+      return;
+    }
+    if (service.name === 'Spotify') {
+      console.log('[Spotify Click] Checking if linked...');
+      const linked = await checkSpotifyLinked();
+      setServices(svcs => svcs.map(s => s.name === 'Spotify' ? { ...s, linked } : s));
+      if (!linked) {
+        window.location.href = 'http://localhost:4000/auth/spotify';
+        return;
+      }
+      setSpotifySidebarOpen(open => !open);
+      setSelectedService(service.name);
+      if (!spotifySidebarOpen) {
+        await fetchSpotifyPlaylists();
       }
       return;
     }
@@ -276,6 +361,41 @@ const HomePage = () => {
                       ))}
                     </ul>
                   ) : ytPlaylists && ytPlaylists.length === 0 && !ytLoading ? (
+                    <em style={{ color: '#fff' }}>No playlists found.</em>
+                  ) : null}
+                </div>
+              )}
+              {/* Fold out Spotify playlists under the sidebar item */}
+              {service.name === 'Spotify' && service.linked && spotifySidebarOpen && (
+                <div style={{ background: '#2e3350', padding: '8px 0 8px 32px', borderRadius: 4, margin: '2px 8px 8px 8px' }}>
+                  {spotifyLoading && <div style={{ color: '#fff' }}>Loading playlists...</div>}
+                  {spotifyError && <div style={{ color: 'red' }}>{spotifyError}</div>}
+                  {spotifyPlaylists && spotifyPlaylists.length > 0 ? (
+                    <ul style={{ paddingLeft: 0, listStyle: 'none', margin: 0 }}>
+                      {spotifyPlaylists.map((pl: any) => (
+                        <li key={pl.id} style={{ marginBottom: 8 }}>
+                          <button
+                            onClick={() => fetchSpotifyPlaylistItems(pl)}
+                            style={{
+                              background: selectedSpotifyPlaylist && selectedSpotifyPlaylist.id === pl.id ? '#eebf63' : 'transparent',
+                              color: selectedSpotifyPlaylist && selectedSpotifyPlaylist.id === pl.id ? '#232946' : '#eebf63',
+                              border: 'none',
+                              fontWeight: 500,
+                              fontSize: 16,
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: 4,
+                              width: '100%',
+                              textAlign: 'left',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            {pl.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : spotifyPlaylists && spotifyPlaylists.length === 0 && !spotifyLoading ? (
                     <em style={{ color: '#fff' }}>No playlists found.</em>
                   ) : null}
                 </div>

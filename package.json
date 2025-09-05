@@ -8,10 +8,12 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/passport": "^1.0.17",
-    "@types/passport-google-oauth20": "^2.0.16"
+    "@types/passport-google-oauth20": "^2.0.16",
+    "@types/passport-spotify": "^2.0.4"
   },
   "dependencies": {
     "axios": "^1.11.0",
+    "passport-spotify": "^2.0.0",
     "react-youtube": "^10.1.0"
   }
 }
