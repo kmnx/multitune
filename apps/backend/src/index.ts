@@ -9,6 +9,7 @@ import pool from './db';
 
 import authRouter from './auth';
 import apiYouTubeRouter from './api_youtube';
+import apiDbRouter from './api_db';
 
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use('/auth', authRouter);
 app.use('/auth', apiYouTubeRouter);
+app.use('/auth', apiDbRouter);
 
 app.get('/', (req, res) => {
   res.send('Multitune backend is running!');
