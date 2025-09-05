@@ -1,5 +1,6 @@
 // auth.ts backup because who knows what the copilot has been drinking
 
+
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -8,6 +9,17 @@ import passport from 'passport';
 import axios from 'axios';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { Request, Response, NextFunction } from 'express';
+
+// Helper to refresh Google OAuth 2.0 access token (works for both Google and YouTube)
+export async function refreshAccessToken(refreshToken: string) {
+  const params = new URLSearchParams();
+  params.append('client_id', process.env.GOOGLE_CLIENT_ID || '');
+  params.append('client_secret', process.env.GOOGLE_CLIENT_SECRET || '');
+  params.append('refresh_token', refreshToken);
+  params.append('grant_type', 'refresh_token');
+  const resp = await axios.post('https://oauth2.googleapis.com/token', params);
+  return resp.data;
+}
 
 // Extend Express Request to include user property
 interface AuthenticatedRequest extends Request {

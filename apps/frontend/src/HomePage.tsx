@@ -131,15 +131,17 @@ const HomePage = () => {
 
   // Check if YouTube is linked for the current user
   const checkYouTubeLinked = async (): Promise<boolean> => {
-    try {
-      const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const data = await res.json();
-      return !!data.linked;
-    } catch {
-      return false;
-    }
+      try {
+        const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        console.log('[checkYouTubeLinked] Response:', data);
+        return !!data.linked;
+      } catch (err) {
+        console.error('[checkYouTubeLinked] Error:', err);
+        return false;
+      }
   };
 
   // Fetch YouTube playlists and update state
@@ -169,6 +171,7 @@ const HomePage = () => {
   const handleServiceClick = async (service: Service) => {
     if (service.name === 'YouTube') {
       // Check if already linked
+      console.log('[YouTube Click] Checking if linked...');
       const linked = await checkYouTubeLinked();
       setServices(svcs => svcs.map(s => s.name === 'YouTube' ? { ...s, linked } : s));
       if (!linked) {
