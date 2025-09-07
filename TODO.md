@@ -23,3 +23,9 @@ Update this file as you go!
 
 
 - [ ] Setup for CI/CD
+
+- Add Spotify fetching playlists
+- add wombot integration
+    - some kind of server for ID db
+    - auth mechanism (msg wombot, get code, store code, link to user in website)
+

@@ -1,11 +1,10 @@
 # Multitune
 
-A modern web app for collecting, organizing, and playing music from multiple sources.
+A  web app for collecting, organizing, and playing music from multiple sources.
 
 ## Structure
 - `apps/backend`: Node.js/Express backend (TypeScript, Postgres)
 - `apps/frontend`: React frontend
-
 
 ## Database (Postgres)
 
@@ -19,27 +18,40 @@ This project uses a local Postgres database via Docker for development.
 - Password: `multitune`
 - Database: `multitune`
 
-To start the database:
-```sh
-docker compose up -d
-```
 
 ---
 
-## Getting Started
 
-1. Install dependencies:
+## Running Database Migrations (No Local psql Needed)
+
+If you don't have `psql` installed, you can run migrations using Docker. This works even on a fresh machine:
+
+1. Make sure your database container is running:
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml database up
+
+2. Run each migration: 
+   for f in ./apps/backend/migrations/*.sql; do
+      docker run --rm \
+    -e PGPASSWORD=multitune \
+    -v "$PWD/apps/backend/migrations":/migrations \
+    --network container:multitune-database-1 \
+    postgres:16 \
+    psql -h database -U multitune -d multitune -f "/migrations/$(basename "$f")"
+
+
+3. After running all migrations, continue with the normal setup:
+
    ```sh
-   yarn install
-   # or
    npm install
-   ```
-2. Start the backend server:
-   ```sh
+
+   # for development we use the override docker-compose.dev.yml
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml database up
+
+   # for production it would be just the normal docker up
+   docker compose -f docker-compose.yml up
+
+   # run dev backend and frontend servers
    npm run dev --workspace=apps/backend
-   ```
-3. Start the frontend server:
-   ```sh
    npm start --workspace=apps/frontend
    ```
 
