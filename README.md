@@ -58,7 +58,7 @@ This project uses a local Postgres database via Docker for development.
 
    # for dev machine: backend and frontend servers
    npm run dev --workspace=apps/backend
-   npm start --workspace=apps/frontend
+   npm run dev --workspace=apps/frontend
 
 ## Stopping the Servers
 
