@@ -21,15 +21,28 @@ This project uses a local Postgres database via Docker for development.
 
 ---
 
+   Create .env in root directory with
+   POSTGRES_USER=multitune
+   POSTGRES_PASSWORD=multitune
+   POSTGRES_DB=multitune
 
-## Running Database Migrations (No Local psql Needed)
+   Create .env in apps/backend with
+   GOOGLE_CLIENT_ID=
+   GOOGLE_CLIENT_SECRET=
+   GOOGLE_CALLBACK_URL=http://localhost:4000/auth/google/callback
+   FRONTEND_URL=http://localhost:3000
+   PORT=4000
+   DATABASE_URL=postgres://multitune:multitune@localhost:5432/multitune
+   SPOTIFY_CLIENT_ID=
+   SPOTIFY_CLIENT_SECRET=
+   SPOTIFY_CALLBACK_URL=http://127.0.0.1:4000/auth/spotify/callback
 
-If you don't have `psql` installed, you can run migrations using Docker. This works even on a fresh machine:
 
-1. Make sure your database container is running:
+
+   # for development we use the override docker-compose.dev.yml to start only the database
    docker compose -f docker-compose.yml -f docker-compose.dev.yml database up
 
-2. Run each migration: 
+   # run migrations
    for f in ./apps/backend/migrations/*.sql; do
       docker run --rm \
     -e PGPASSWORD=multitune \
@@ -39,21 +52,13 @@ If you don't have `psql` installed, you can run migrations using Docker. This wo
     psql -h database -U multitune -d multitune -f "/migrations/$(basename "$f")"
 
 
-3. After running all migrations, continue with the normal setup:
 
-   ```sh
-   npm install
-
-   # for development we use the override docker-compose.dev.yml
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml database up
-
-   # for production it would be just the normal docker up
+   # for production or local test of docker build run:
    docker compose -f docker-compose.yml up
 
-   # run dev backend and frontend servers
+   # for dev machine: backend and frontend servers
    npm run dev --workspace=apps/backend
    npm start --workspace=apps/frontend
-   ```
 
 ## Stopping the Servers
 
