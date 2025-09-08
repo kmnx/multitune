@@ -87,7 +87,7 @@ const defaultServices: Service[] = [
   { name: 'Spotify', icon: '🎵', linked: false },
 ];
 
-const HomePage = () => {
+const App = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>(defaultServices);
@@ -515,4 +515,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default App;
