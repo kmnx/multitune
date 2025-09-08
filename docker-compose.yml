@@ -24,6 +24,8 @@ services:
       - database
     networks:
       - app-network
+    ports:
+    - "4000:4000"
 
   frontend:
     build: ./apps/frontend
@@ -31,6 +33,8 @@ services:
       - backend
     networks:
       - app-network
+    ports:
+      - "3000:80"
 
 networks:
   app-network:

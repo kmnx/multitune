@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build
 
 # Expose port (change if your backend uses a different port)
-EXPOSE 8080
+EXPOSE 4000
 
 # Start the app
 CMD ["node", "dist/index.js"]

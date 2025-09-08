@@ -15,7 +15,7 @@ import apiSpotifyRouter from './api_spotify';
 
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = Number(process.env.PORT) || 4000;
 
 app.use(passport.initialize());
 
@@ -41,6 +41,6 @@ app.get('/db-test', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0',() => {
   console.log(`Server listening on port ${port}`);
 });

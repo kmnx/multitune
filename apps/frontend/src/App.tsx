@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import YouTube from 'react-youtube';
+import type { YouTubeEvent } from 'react-youtube';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -493,7 +494,7 @@ const App = () => {
                                     rel: 0,
                                   },
                                 }}
-                                onReady={e => setPlayerRef(e.target)}
+                                onReady={(e: YouTubeEvent) => setPlayerRef(e.target)}
                                 onEnd={() => setPlayingVideoId(null)}
                               />
                             </div>
