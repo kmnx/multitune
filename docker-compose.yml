@@ -17,8 +17,10 @@ services:
       retries: 5
 
   backend:
+    
     build: ./apps/backend
     environment:
+      FRONTEND_URL: http://localhost
       DATABASE_URL: postgres://multitune:multitune@database:5432/multitune
     depends_on:
       - database
@@ -34,7 +36,7 @@ services:
     networks:
       - app-network
     ports:
-      - "3000:80"
+      - "80:80"
 
 networks:
   app-network:
