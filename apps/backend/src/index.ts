@@ -5,6 +5,7 @@ import './env';
 import express from 'express';
 import cors from 'cors';
 import pool from './db';
+import passport from 'passport';
 
 
 import authRouter from './auth';
@@ -19,6 +20,7 @@ const port = process.env.PORT || 4000;
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
+app.use(passport.initialize());
 
 app.use('/auth', authRouter);
 app.use('/auth', apiYouTubeRouter);

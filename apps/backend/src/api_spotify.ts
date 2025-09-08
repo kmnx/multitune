@@ -43,7 +43,7 @@ passport.use('spotify', new SpotifyStrategy({
   }
 }));
 
-router.use(passport.initialize());
+// router.use(passport.initialize());
 
 // --- Spotify OAuth routes ---
 router.get('/spotify', passport.authenticate('spotify', { scope: [

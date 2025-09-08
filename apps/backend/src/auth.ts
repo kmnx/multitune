@@ -169,7 +169,7 @@ router.post('/signup', async (req: Request, res: Response) => {
 });
 
 
-router.use(passport.initialize());
+// router.use(passport.initialize());
 
 
 // Main Site Login

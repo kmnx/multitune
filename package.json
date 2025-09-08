@@ -7,8 +7,10 @@
   ],
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
+    "@types/passport-local": "^1.0.38",
     "@types/passport-spotify": "^2.0.4",
     "@vitejs/plugin-react": "^5.0.2",
     "vite": "^7.1.5"
