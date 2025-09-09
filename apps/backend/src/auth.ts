@@ -6,8 +6,8 @@ import passport from 'passport';
 import axios from 'axios';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { Request, Response, NextFunction } from 'express';
-const host = process.env.FRONTEND_HOST || 'localhost';
-const port = process.env.FRONTEND_PORT || '3000';
+const host = process.env.FRONTEND_HOST;
+const port = process.env.FRONTEND_PORT;
 
 // If port is 80 (default for HTTP), omit it from the URL
 const frontendUrl =
@@ -52,7 +52,7 @@ export function authenticateJWT(req: AuthenticatedRequest, res: Response, next: 
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID || '',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/auth/google/callback',
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     // Find or create user
@@ -93,7 +93,7 @@ router.get('/google/callback', passport.authenticate('google', { session: false,
 passport.use('youtube', new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID || '',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  callbackURL: process.env.YOUTUBE_CALLBACK_URL || 'http://localhost:4000/auth/youtube/callback',
+  callbackURL: process.env.YOUTUBE_CALLBACK_URL,
   scope: [
     'https://www.googleapis.com/auth/youtube.readonly',
     'profile',

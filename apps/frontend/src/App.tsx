@@ -3,6 +3,12 @@ import YouTube from 'react-youtube';
 import type { YouTubeEvent } from 'react-youtube';
 
 const getToken = () => localStorage.getItem('token');
+const backendHost = import.meta.env.BACKEND_HOST;
+const backendPort = import.meta.env.BACKEND_PORT;
+const backendUrl =
+  backendPort === '80'
+    ? `http://${backendHost}`
+    : `http://${backendHost}:${backendPort}`;
 
 const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -29,7 +35,7 @@ const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
     const body: any = { username, password };
     if (mode === 'signup') body.email = email;
     try {
-      const res = await fetch(`http://localhost:4000${endpoint}`,
+      const res = await fetch(`${backendUrl}${endpoint}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -48,7 +54,7 @@ const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'http://localhost:4000/auth/google';
+    window.location.href = `${backendUrl}/auth/google`;
   };
 
   return (
@@ -110,7 +116,7 @@ const App = () => {
     setPlaylistItemsLoading(true);
     setPlaylistItemsError(null);
     try {
-  const res = await fetch(`http://localhost:4000/auth/api/db/playlist/${playlist.id}/items`, {
+      const res = await fetch(`${backendUrl}/auth/api/db/playlist/${playlist.id}/items`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -134,7 +140,7 @@ const App = () => {
   // Check if YouTube is linked for the current user
   const checkYouTubeLinked = async (): Promise<boolean> => {
     try {
-      const res = await fetch('http://localhost:4000/auth/api/youtube/linked', {
+      const res = await fetch(`${backendUrl}/auth/api/youtube/linked`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -149,7 +155,7 @@ const App = () => {
   // Check if Spotify is linked for the current user
   const checkSpotifyLinked = async (): Promise<boolean> => {
     try {
-      const res = await fetch('http://localhost:4000/auth/api/spotify/linked', {
+      const res = await fetch(`${backendUrl}/auth/api/spotify/linked`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -175,7 +181,7 @@ const App = () => {
     setSpotifyLoading(true);
     setSpotifyError(null);
     try {
-      const res = await fetch('http://localhost:4000/auth/api/spotify/playlists', {
+      const res = await fetch(`${backendUrl}/auth/api/spotify/playlists`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -200,7 +206,7 @@ const App = () => {
     setSpotifyPlaylistItemsLoading(true);
     setSpotifyPlaylistItemsError(null);
     try {
-      const res = await fetch(`http://localhost:4000/auth/api/db/spotify/playlist/${playlist.id}/items`, {
+      const res = await fetch(`${backendUrl}/auth/api/db/spotify/playlist/${playlist.id}/items`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -223,7 +229,7 @@ const App = () => {
     setYtLoading(true);
     setYtError(null);
     try {
-      const res = await fetch('http://localhost:4000/auth/api/youtube/playlists', {
+      const res = await fetch(`${backendUrl}/auth/api/youtube/playlists`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -248,7 +254,7 @@ const App = () => {
       const linked = await checkYouTubeLinked();
       setServices(svcs => svcs.map(s => s.name === 'YouTube' ? { ...s, linked } : s));
       if (!linked) {
-        window.location.href = 'http://localhost:4000/auth/youtube';
+        window.location.href = `${backendUrl}/auth/youtube`;
         return;
       }
       setYtSidebarOpen(open => !open);
@@ -263,7 +269,7 @@ const App = () => {
       const linked = await checkSpotifyLinked();
       setServices(svcs => svcs.map(s => s.name === 'Spotify' ? { ...s, linked } : s));
       if (!linked) {
-        window.location.href = 'http://localhost:4000/auth/spotify';
+        window.location.href = `${backendUrl}/auth/spotify`;
         return;
       }
       setSpotifySidebarOpen(open => !open);

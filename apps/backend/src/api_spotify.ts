@@ -5,8 +5,8 @@ import { authenticateJWT } from './auth';
 import passport from 'passport';
 import axios from 'axios';
 import { Strategy as SpotifyStrategy } from 'passport-spotify';
-const host = process.env.FRONTEND_HOST || 'localhost';
-const port = process.env.FRONTEND_PORT || '3000';
+const host = process.env.FRONTEND_HOST;
+const port = process.env.FRONTEND_PORT;
 
 // If port is 80 (default for HTTP), omit it from the URL
 const frontendUrl =

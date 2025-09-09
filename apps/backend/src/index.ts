@@ -13,8 +13,8 @@ import apiYouTubeRouter from './api_youtube';
 import apiDbRouter from './api_db';
 import apiSpotifyRouter from './api_spotify';
 
-const host = process.env.FRONTEND_HOST || 'localhost';
-const frontendPort = process.env.FRONTEND_PORT || '3000';
+const host = process.env.FRONTEND_HOST;
+const frontendPort = process.env.FRONTEND_PORT;
 
 // If port is 80 (default for HTTP), omit it from the URL
 const frontendUrl =
