@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import fs from 'fs';
 
 // Log which env file is being read
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
