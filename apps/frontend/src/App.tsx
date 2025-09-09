@@ -3,8 +3,8 @@ import YouTube from 'react-youtube';
 import type { YouTubeEvent } from 'react-youtube';
 
 const getToken = () => localStorage.getItem('token');
-const backendHost = import.meta.env.BACKEND_HOST;
-const backendPort = import.meta.env.BACKEND_PORT;
+const backendHost = import.meta.env.VITE_BACKEND_HOST;
+const backendPort = import.meta.env.VITE_BACKEND_PORT;
 const backendUrl =
   backendPort === '80'
     ? `http://${backendHost}`
