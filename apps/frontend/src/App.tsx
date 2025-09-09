@@ -11,6 +11,7 @@ if (!backendHost || !backendPort) {
   // Log all env vars for debug
   console.log('VITE env:', import.meta.env);
 }
+console.log('VITE env:', import.meta.env);
 const backendUrl =
   backendPort === '80'
     ? `http://${backendHost}`
