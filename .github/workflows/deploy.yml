@@ -33,12 +33,6 @@ jobs:
           echo "VITE_BACKEND_HOST=${{ secrets.VITE_BACKEND_HOST }}" > apps/frontend/.env
           echo "VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}" >> apps/frontend/.env
           cat apps/frontend/.env
-      - name: Check .env exists and is not empty
-        run: |
-          ls -l apps/frontend/.env
-          wc -l apps/frontend/.env
-          head -n 5 apps/frontend/.env
-          cat apps/frontend/.env
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
