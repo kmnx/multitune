@@ -81,10 +81,12 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/' }), (req, res) => {
   // Issue JWT and redirect or respond
+  if (!req.user) {
+    // If authentication failed, redirect to frontend with error
+    return res.redirect(`${frontendUrl}/?error=google_auth_failed`);
+  }
   const user = req.user as any;
   const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-  // For SPA, you might want to redirect with token in query or respond with HTML/JS
-  // Here, redirect to frontend with token in query
   res.redirect(`${frontendUrl}/?token=${token}`);
 });
 

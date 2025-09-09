@@ -17,14 +17,18 @@ const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  // Handle Google OAuth token in URL
+  // Handle Google OAuth token and error in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const error = params.get('error');
     if (token) {
       localStorage.setItem('token', token);
       window.history.replaceState({}, document.title, window.location.pathname); // Clean up URL
       onAuth();
+    } else if (error) {
+      setError('Google authentication failed. Please try again.');
+      window.history.replaceState({}, document.title, window.location.pathname); // Clean up URL
     }
   }, [onAuth]);
 
