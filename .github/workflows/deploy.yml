@@ -32,6 +32,7 @@ jobs:
         run: |
           echo "VITE_BACKEND_HOST=${{ secrets.VITE_BACKEND_HOST }}" > apps/frontend/.env
           echo "VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}" >> apps/frontend/.env
+          run: cat apps/frontend/.env
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
