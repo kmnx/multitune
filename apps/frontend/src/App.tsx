@@ -1,4 +1,5 @@
 console.log('hello there t');
+console.log('VITE_BACKEND_HOST:', import.meta.env.VITE_BACKEND_HOST);
 import React, { useEffect, useState } from 'react';
 import YouTube from 'react-youtube';
 import type { YouTubeEvent } from 'react-youtube';
