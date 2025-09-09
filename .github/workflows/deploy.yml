@@ -28,12 +28,17 @@ jobs:
           context: ./apps/backend
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/multitune-backend:latest
-      - name: Create frontend .env.production file
+      - name: Create frontend .env file
         run: |
-          echo "VITE_BACKEND_HOST=${{ secrets.VITE_BACKEND_HOST }}" > apps/frontend/.env.production
-          echo "VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}" >> apps/frontend/.env.production
-          cat apps/frontend/.env.production
-      
+          echo "VITE_BACKEND_HOST=${{ secrets.VITE_BACKEND_HOST }}" > apps/frontend/.env
+          echo "VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}" >> apps/frontend/.env
+          cat apps/frontend/.env
+      - name: Check .env exists and is not empty
+        run: |
+          ls -l apps/frontend/.env
+          wc -l apps/frontend/.env
+          head -n 5 apps/frontend/.env
+          cat apps/frontend/.env
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
