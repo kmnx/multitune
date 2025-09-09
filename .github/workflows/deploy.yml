@@ -28,14 +28,12 @@ jobs:
           context: ./apps/backend
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/multitune-backend:latest
-      - name: Create frontend .env file
-        with:
-            context: ./apps/frontend
-        run: |
-          echo "VITE_BACKEND_HOST=chunted.fr" > .env
-          echo "VITE_BACKEND_PORT=4000" >> .env
-          cat .env
+      
       - name: Build and push frontend
+        env: 
+          VITE_BACKEND_HOST: ${{ secrets.VITE_BACKEND_HOST }}
+          VITE_BACKEND_PORT: ${{ secrets.VITE_BACKEND_PORT }}
+
         uses: docker/build-push-action@v5
         with:
           context: ./apps/frontend
