@@ -1,0 +1,3 @@
+- secrets in .env
+    - docker-compose loads them and makes them visible to containers
+    - in local dev, the .env location is provided in env.ts

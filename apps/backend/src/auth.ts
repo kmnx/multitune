@@ -6,6 +6,14 @@ import passport from 'passport';
 import axios from 'axios';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { Request, Response, NextFunction } from 'express';
+const host = process.env.FRONTEND_HOST || 'localhost';
+const port = process.env.FRONTEND_PORT || '3000';
+
+// If port is 80 (default for HTTP), omit it from the URL
+const frontendUrl =
+  port === '80'
+    ? `http://${host}`
+    : `http://${host}:${port}`;
 
 // Helper to refresh Google OAuth 2.0 access token (works for both Google and YouTube)
 export async function refreshAccessToken(refreshToken: string) {
@@ -77,7 +85,6 @@ router.get('/google/callback', passport.authenticate('google', { session: false,
   const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
   // For SPA, you might want to redirect with token in query or respond with HTML/JS
   // Here, redirect to frontend with token in query
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   res.redirect(`${frontendUrl}/?token=${token}`);
 });
 
@@ -138,7 +145,6 @@ router.get('/youtube/callback', passport.authenticate('youtube', { session: fals
   // Issue JWT and redirect or respond
   const user = req.user as any;
   const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   res.redirect(`${frontendUrl}/?token=${token}&linked=youtube`);
 });
 

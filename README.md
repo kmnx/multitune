@@ -27,15 +27,7 @@ This project uses a local Postgres database via Docker for development.
    POSTGRES_DB=multitune
 
    Create .env in apps/backend with
-   GOOGLE_CLIENT_ID=
-   GOOGLE_CLIENT_SECRET=
-   GOOGLE_CALLBACK_URL=http://localhost:4000/auth/google/callback
-   FRONTEND_URL=http://localhost:3000
-   PORT=4000
-   DATABASE_URL=postgres://multitune:multitune@localhost:5432/multitune
-   SPOTIFY_CLIENT_ID=
-   SPOTIFY_CLIENT_SECRET=
-   SPOTIFY_CALLBACK_URL=http://127.0.0.1:4000/auth/spotify/callback
+   stuff
 
 
 
@@ -60,8 +52,4 @@ This project uses a local Postgres database via Docker for development.
    npm run dev --workspace=apps/backend
    npm run dev --workspace=apps/frontend
 
-## Stopping the Servers
 
-- To stop either the backend or frontend server, press `Ctrl+C` in the terminal where it is running.
-
-See each app's README for more details and advanced usage.

@@ -13,6 +13,14 @@ import apiYouTubeRouter from './api_youtube';
 import apiDbRouter from './api_db';
 import apiSpotifyRouter from './api_spotify';
 
+const host = process.env.FRONTEND_HOST || 'localhost';
+const frontendPort = process.env.FRONTEND_PORT || '3000';
+
+// If port is 80 (default for HTTP), omit it from the URL
+const frontendUrl =
+  frontendPort === '80'
+    ? `http://${host}`
+    : `http://${host}:${frontendPort}`;
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -20,7 +28,7 @@ const port = Number(process.env.PORT) || 4000;
 app.use(passport.initialize());
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: frontendUrl,
   credentials: true
 }));app.use(express.json());
 
