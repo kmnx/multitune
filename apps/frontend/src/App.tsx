@@ -1,4 +1,4 @@
-console.log('hello there i');
+console.log('hello there o');
 console.log('VITE_BACKEND_HOST:', import.meta.env.VITE_BACKEND_HOST);
 import React, { useEffect, useState } from 'react';
 import YouTube from 'react-youtube';
@@ -16,8 +16,8 @@ if (!backendHost || !backendPort) {
 console.log('VITE env:', import.meta.env);
 const backendUrl =
   backendPort === '80'
-    ? `http://${backendHost}`
-    : `http://${backendHost}:${backendPort}`;
+    ? `${backendHost}`
+    : `${backendHost}:${backendPort}`;
 
 const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
