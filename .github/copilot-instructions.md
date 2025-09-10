@@ -14,7 +14,7 @@
 
 ### Repository Size
 - ~40 source files across backend and frontend
-- Key directories: `apps/backend/src/` (7 files), `apps/frontend/src/` (3 files)
+- Key directories: `apps/backend/src/`, `apps/frontend/src/`
 - Database migrations: 6 SQL files in `apps/backend/migrations/`
 
 ## Build and Development Instructions
@@ -36,7 +36,7 @@ POSTGRES_PASSWORD=multitune
 POSTGRES_DB=multitune
 ```
 
-2. **Backend `.env` file** at `apps/backend/.env` (required for backend):
+2. **Backend `.env` file** at `apps/.env` (required for backend):
 ```bash
 DATABASE_URL=postgres://multitune:multitune@localhost:5432/multitune
 DB_USER=multitune
@@ -59,13 +59,12 @@ SPOTIFY_CLIENT_SECRET=fake_spotify_client_secret
 SPOTIFY_CALLBACK_URL=http://localhost:9876/auth/spotify/callback
 ```
 
-3. **Frontend `.env` file** at `apps/frontend/.env`:
+3. **Frontend `.env` file** at `apps/.env`:
 ```bash
 VITE_BACKEND_HOST=localhost
-VITE_BACKEND_PORT=9876
+VITE_BACKEND_PORT=4000
 ```
 
-**Note**: Use PORT=9876 for backend as ports 4000-4001 may be occupied in development environments.
 
 ### Development Workflow (Step-by-Step)
 
@@ -128,12 +127,11 @@ npm run build --workspace=apps/backend && npm run build --workspace=apps/fronten
 
 **Backend Health Check**:
 ```bash
-curl http://localhost:9876/                    # Should return: "Multitune backend is running!"
-curl http://localhost:9876/db-test            # Should return JSON with timestamp
+curl http://localhost:4000/                    # Should return: "Multitune backend is running!"
+curl http://localhost:4000/db-test            # Should return JSON with timestamp
 ```
 
 **Common Build Issues**:
-- **Port conflicts**: If backend fails with `EADDRINUSE`, change PORT in backend .env
 - **Missing env vars**: Backend crashes immediately with OAuth errors if .env is missing
 - **Database not ready**: Migrations fail if database container isn't fully started
 - **Environment loading**: The backend env.ts loads both root .env and local .env files
@@ -144,13 +142,12 @@ curl http://localhost:9876/db-test            # Should return JSON with timestam
 ```
 /
 ├── .github/workflows/deploy.yml          # CI/CD: Docker build & deploy
-├── .env                                  # Docker Compose environment
+├── .env                                  # Unified .env for Frontend, Backend and all other variables
 ├── package.json                          # Root workspace config
 ├── docker-compose.yml                    # Production container setup
 ├── docker-compose.dev.yml                # Dev override (database only)
 │
 ├── apps/backend/                         # Express API server
-│   ├── .env                             # Backend environment (required!)
 │   ├── package.json                     # Backend dependencies
 │   ├── tsconfig.json                    # TypeScript config
 │   ├── Dockerfile                       # Backend container
@@ -166,7 +163,6 @@ curl http://localhost:9876/db-test            # Should return JSON with timestam
 │       └── api_db.ts                    # Database CRUD operations
 │
 └── apps/frontend/                        # React + Vite SPA
-    ├── .env                             # Frontend environment (required!)
     ├── package.json                     # Frontend dependencies  
     ├── tsconfig.json                    # TypeScript config
     ├── vite.config.ts                   # Vite bundler config
@@ -239,7 +235,7 @@ npm install <package> --workspace=apps/frontend   # Frontend dependency
 - Database logs: `docker compose logs database`
 
 ### Environment Variables
-- Backend loads: root `.env` then `apps/backend/.env` (local overrides root)
+- Backend loads: root `.env` 
 - Frontend uses Vite env vars (must start with `VITE_`)
 - Docker Compose loads root `.env` for container environment
 
