@@ -12,8 +12,8 @@ const port = process.env.FRONTEND_PORT;
 // If port is 80 (default for HTTP), omit it from the URL
 const frontendUrl =
   port === '80'
-    ? `http://${host}`
-    : `http://${host}:${port}`;
+    ? `${host}`
+    : `${host}:${port}`;
 
 // Helper to refresh Google OAuth 2.0 access token (works for both Google and YouTube)
 export async function refreshAccessToken(refreshToken: string) {

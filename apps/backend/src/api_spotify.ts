@@ -11,8 +11,8 @@ const port = process.env.FRONTEND_PORT;
 // If port is 80 (default for HTTP), omit it from the URL
 const frontendUrl =
   port === '80'
-    ? `http://${host}`
-    : `http://${host}:${port}`;
+    ? `${host}`
+    : `${host}:${port}`;
 
 const router = express.Router();
 
