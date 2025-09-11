@@ -46,8 +46,6 @@ services:
       - backend
     networks:
       - app-network
-    ports:
-      - "${FRONTEND_PORT}:80"
 
   nginx:
     image: nginx:alpine
