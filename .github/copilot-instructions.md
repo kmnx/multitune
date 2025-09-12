@@ -29,15 +29,11 @@
 
 **CRITICAL**: Always set up environment files before running any servers. The backend will crash without proper OAuth credentials.
 
-1. **Root `.env` file** (required for Docker Compose):
+1. **Root and Backend `.env` file** (required for Docker Compose and backend):
 ```bash
 POSTGRES_USER=multitune
 POSTGRES_PASSWORD=multitune
 POSTGRES_DB=multitune
-```
-
-2. **Backend `.env` file** at `apps/.env` (required for backend):
-```bash
 DATABASE_URL=postgres://multitune:multitune@localhost:5432/multitune
 DB_USER=multitune
 DB_PASSWORD=multitune
@@ -48,6 +44,7 @@ PORT=9876
 FRONTEND_HOST=localhost
 FRONTEND_PORT=3000
 JWT_SECRET=dev_secret_key
+````
 
 # OAuth credentials (use fake values for basic backend functionality)
 GOOGLE_CLIENT_ID=fake_google_client_id
@@ -59,7 +56,7 @@ SPOTIFY_CLIENT_SECRET=fake_spotify_client_secret
 SPOTIFY_CALLBACK_URL=http://localhost:9876/auth/spotify/callback
 ```
 
-3. **Frontend `.env` file** at `apps/.env`:
+3. **Frontend `.env` file** at `apps/frontend/.env`:
 ```bash
 VITE_BACKEND_HOST=localhost
 VITE_BACKEND_PORT=4000
@@ -97,30 +94,13 @@ done
 4. **Start Backend** (in new terminal):
 ```bash
 npm run dev --workspace=apps/backend
-# Should show: "Server listening on port 9876"
+# Should show: "Server listening on port 4000"
 ```
 
 5. **Start Frontend** (in new terminal):  
 ```bash
 npm run dev --workspace=apps/frontend
 # Should show: "VITE v7.1.5 ready in 229 ms" and "Local: http://localhost:3000/"
-```
-
-### Build Commands
-
-**Backend Build** (~2 seconds):
-```bash
-npm run build --workspace=apps/backend  # Compiles TypeScript to dist/
-```
-
-**Frontend Build** (~5-10 seconds):
-```bash
-npm run build --workspace=apps/frontend  # Runs tsc && vite build, outputs to build/
-```
-
-**Full Build** (test both):
-```bash
-npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend
 ```
 
 ### Testing and Validation
@@ -142,7 +122,7 @@ curl http://localhost:4000/db-test            # Should return JSON with timestam
 ```
 /
 ├── .github/workflows/deploy.yml          # CI/CD: Docker build & deploy
-├── .env                                  # Unified .env for Frontend, Backend and all other variables
+├── .env                                  # Unified .env for Docker and backend
 ├── package.json                          # Root workspace config
 ├── docker-compose.yml                    # Production container setup
 ├── docker-compose.dev.yml                # Dev override (database only)
@@ -163,6 +143,7 @@ curl http://localhost:4000/db-test            # Should return JSON with timestam
 │       └── api_db.ts                    # Database CRUD operations
 │
 └── apps/frontend/                        # React + Vite SPA
+    ├── .env                             # Frontend env (VITE_ vars)  
     ├── package.json                     # Frontend dependencies  
     ├── tsconfig.json                    # TypeScript config
     ├── vite.config.ts                   # Vite bundler config
@@ -235,7 +216,7 @@ npm install <package> --workspace=apps/frontend   # Frontend dependency
 - Database logs: `docker compose logs database`
 
 ### Environment Variables
-- Backend loads: root `.env` 
+- Backend loads root `.env`
 - Frontend uses Vite env vars (must start with `VITE_`)
 - Docker Compose loads root `.env` for container environment
 
