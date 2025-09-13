@@ -53,6 +53,7 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - /etc/letsencrypt/live/chunted.fr/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
       - /etc/letsencrypt/live/chunted.fr/privkey.pem:/etc/ssl/private/privkey.pem:ro
