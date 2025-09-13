@@ -5,19 +5,19 @@ import YouTube from 'react-youtube';
 import type { YouTubeEvent } from 'react-youtube';
 
 const getToken = () => localStorage.getItem('token');
+const isProd = import.meta.env.MODE === 'production';
 const backendHost = import.meta.env.VITE_BACKEND_HOST;
 const backendPort = import.meta.env.VITE_BACKEND_PORT;
-if (!backendHost || !backendPort) {
-  // This will show up in browser console after build
-  console.warn('VITE_BACKEND_HOST or VITE_BACKEND_PORT is undefined!');
-  // Log all env vars for debug
-  console.log('VITE env:', import.meta.env);
+let backendUrl = '';
+if (!isProd) {
+  if (!backendHost || !backendPort) {
+    // This will show up in browser console after build
+    console.warn('VITE_BACKEND_HOST or VITE_BACKEND_PORT is undefined!');
+    // Log all env vars for debug
+    console.log('VITE env:', import.meta.env);
+  }
+  backendUrl = backendPort === '80' ? `${backendHost}` : `${backendHost}:${backendPort}`;
 }
-console.log('VITE env:', import.meta.env);
-const backendUrl =
-  backendPort === '80'
-    ? `${backendHost}`
-    : `${backendHost}:${backendPort}`;
 
 const AuthModal = ({ onAuth }: { onAuth: () => void }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
