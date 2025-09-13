@@ -46,8 +46,8 @@ services:
       - backend
     networks:
       - app-network
-    ports:
-    - "80:80"
+    expose:
+    - "80"
 
   nginx:
     image: nginx:alpine
