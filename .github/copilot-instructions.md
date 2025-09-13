@@ -17,6 +17,13 @@
 - Key directories: `apps/backend/src/`, `apps/frontend/src/`
 - Database migrations: 6 SQL files in `apps/backend/migrations/`
 
+### Server setup:
+- Everything is containerized with Docker
+- Frontend is built with Vite and served via nginx in its own container
+- Backend runs in a Node.js container
+- PostgreSQL database runs in its own container
+- Nginx is used as a reverse proxy in production, routing to backend and frontend.
+
 ## Build and Development Instructions
 
 ### Prerequisites
