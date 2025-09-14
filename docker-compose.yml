@@ -80,7 +80,7 @@ services:
         for f in /migrations/*.sql; do
           echo 'Running migration file:' $f
           cat $f
-          psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\";
+          /usr/bin/psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\";
         done
       "
     depends_on:
