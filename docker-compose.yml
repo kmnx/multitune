@@ -64,14 +64,8 @@ services:
       - frontend
     networks:
       - app-network
-
-networks:
-  app-network:
-
-volumes:
-  postgres_data:
-
-migrate:
+  
+  migrate:
   image: postgres:16
   volumes:
     - ./apps/backend/migrations:/migrations
@@ -85,3 +79,10 @@ migrate:
     "
   depends_on:
     - database
+
+networks:
+  app-network:
+
+volumes:
+  postgres_data:
+
