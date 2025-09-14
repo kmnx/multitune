@@ -39,15 +39,12 @@
 1. **Root and Backend `.env` file** (required for Docker Compose and backend):
 - DB_HOST must be `localhost` for local dev, `database` for Docker containers
 ```bash
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
 POSTGRES_USER=multitune
 POSTGRES_PASSWORD=multitune
 POSTGRES_DB=multitune
-DB_USER=multitune
-DB_PASSWORD=multitune
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=multitune
-PORT=9876
+
 FRONTEND_HOST=localhost
 FRONTEND_PORT=3000
 JWT_SECRET=dev_secret_key
