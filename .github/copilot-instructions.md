@@ -37,11 +37,11 @@
 **CRITICAL**: Always set up environment files before running any servers. The backend will crash without proper OAuth credentials.
 
 1. **Root and Backend `.env` file** (required for Docker Compose and backend):
+- DB_HOST must be `localhost` for local dev, `database` for Docker containers
 ```bash
 POSTGRES_USER=multitune
 POSTGRES_PASSWORD=multitune
 POSTGRES_DB=multitune
-DATABASE_URL=postgres://multitune:multitune@localhost:5432/multitune
 DB_USER=multitune
 DB_PASSWORD=multitune
 DB_HOST=localhost

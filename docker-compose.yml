@@ -30,7 +30,6 @@ services:
       DB_NAME: ${DB_NAME}
       FRONTEND_HOST: ${FRONTEND_HOST}
       FRONTEND_PORT: ${FRONTEND_PORT}
-      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - database
     networks:
