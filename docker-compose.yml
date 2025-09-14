@@ -68,6 +68,8 @@ services:
     image: postgres:16
     volumes:
       - ./apps/backend/migrations:/migrations
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     env_file:
       - .env
     entrypoint: >
