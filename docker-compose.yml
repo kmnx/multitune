@@ -20,7 +20,7 @@ services:
 
   backend:
     env_file:
-    - .env
+      - .env
     image: ${DOCKER_USERNAME}/multitune-backend:latest
     environment:
       DB_HOST: database
@@ -35,18 +35,18 @@ services:
     networks:
       - app-network
     ports:
-    - "4000:4000"
+      - "4000:4000"
 
   frontend:
     env_file:
-    - .env
+      - .env
     image: ${DOCKER_USERNAME}/multitune-frontend:latest
     depends_on:
       - backend
     networks:
       - app-network
     expose:
-    - "80"
+      - "80"
 
   nginx:
     image: nginx:alpine
@@ -63,7 +63,7 @@ services:
       - frontend
     networks:
       - app-network
-  
+
   migrate:
     image: postgres:16
     volumes:
@@ -79,11 +79,10 @@ services:
     depends_on:
       - database
     networks:
-    - app-network
+      - app-network
 
 networks:
   app-network:
 
 volumes:
   postgres_data:
-
