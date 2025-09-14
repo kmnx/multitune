@@ -1,6 +1,6 @@
 -- 003_playlists_youtube.sql
 
-CREATE TABLE playlists_youtube (
+CREATE TABLE IF NOT EXISTS playlists_youtube (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     yt_playlist_id VARCHAR(64) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE playlists_youtube (
     UNIQUE(user_id, yt_playlist_id)
 );
 
-CREATE TABLE playlist_items_youtube (
+CREATE TABLE IF NOT EXISTS playlist_items_youtube (
     id SERIAL PRIMARY KEY,
     playlist_id INTEGER NOT NULL REFERENCES playlists_youtube(id) ON DELETE CASCADE,
     yt_video_id VARCHAR(32) NOT NULL,

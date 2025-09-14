@@ -1,7 +1,7 @@
 -- 001_init.sql
 -- Initial schema for users, tracks, playlists, sources
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE sources (
+CREATE TABLE IF NOT EXISTS sources (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     type VARCHAR(50) NOT NULL, -- e.g. 'spotify', 'youtube', etc.
@@ -17,7 +17,7 @@ CREATE TABLE sources (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE tracks (
+CREATE TABLE IF NOT EXISTS tracks (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     source_id INTEGER REFERENCES sources(id),
@@ -30,7 +30,7 @@ CREATE TABLE tracks (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE playlists (
+CREATE TABLE IF NOT EXISTS playlists (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE playlists (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE playlist_tracks (
+CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_id INTEGER REFERENCES playlists(id) ON DELETE CASCADE,
     track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE,
     position INTEGER,

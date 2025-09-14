@@ -1,7 +1,7 @@
 -- 004_create_user_services.sql
 -- Table to store linked services and tokens for each user
 
-CREATE TABLE user_services (
+CREATE TABLE IF NOT EXISTS user_services (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     service VARCHAR(50) NOT NULL, -- e.g. 'youtube', 'spotify'

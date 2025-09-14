@@ -70,3 +70,18 @@ networks:
 
 volumes:
   postgres_data:
+
+migrate:
+  image: postgres:16
+  volumes:
+    - ./apps/backend/migrations:/migrations
+  env_file:
+    - .env
+  entrypoint: >
+    bash -c "
+      for f in /migrations/*.sql; do
+        psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\";
+      done
+    "
+  depends_on:
+    - database
