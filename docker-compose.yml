@@ -75,7 +75,11 @@ services:
       - .env
     entrypoint: >
       bash -c "
+        echo 'Listing /migrations directory:'
+        ls -l /migrations
         for f in /migrations/*.sql; do
+          echo 'Running migration file:' $f
+          cat $f
           psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\";
         done
       "
