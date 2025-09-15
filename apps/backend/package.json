@@ -7,10 +7,10 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "migrate": "node-pg-migrate up",
+    "start": "npm run migrate && node dist/index.js"
   },
   "dependencies": {
-    
     "axios": "^1.6.7",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -21,7 +21,8 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-spotify": "^2.0.0",
     "pg": "^8.11.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "node-pg-migrate": "^7.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

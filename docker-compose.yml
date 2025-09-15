@@ -65,29 +65,6 @@ services:
     networks:
       - app-network
 
-  migrate:
-    image: postgres:16
-    volumes:
-      - ./apps/backend/migrations:/migrations
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-    env_file:
-      - .env
-    entrypoint: >
-      bash -c "
-        echo 'Listing /migrations directory:'
-        ls -l /migrations
-        for f in /migrations/*.sql; do
-          if [ -f \"$f\" ]; then
-            echo 'Running migration file:' $f
-            /usr/bin/psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\"
-          fi
-        done
-      "
-    depends_on:
-      - database
-    networks:
-      - app-network
 
 networks:
   app-network:

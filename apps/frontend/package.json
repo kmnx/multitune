@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate": "node-pg-migrate up",
   },
   "dependencies": {
     "@vitejs/plugin-react-swc": "^4.0.1",
