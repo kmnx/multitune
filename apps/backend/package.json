@@ -8,7 +8,7 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
 
-  "migrate": "node-pg-migrate up --config ./node-pg-migrate.config.js",
+  "migrate": "node-pg-migrate up",
     "start": "npm run migrate && node dist/index.js"
   },
   "dependencies": {
