@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "migrate": "node-pg-migrate up",
+    "start": "npm run migrate && vite preview"
   },
   "dependencies": {
     "@vitejs/plugin-react-swc": "^4.0.1",
