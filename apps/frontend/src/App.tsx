@@ -635,16 +635,83 @@ const App = () => {
             </div>
           </div>
         )}
-        {selectedService && selectedService !== "YouTube" && (
+        {selectedService === "Spotify" && selectedPlaylist && (
           <div>
-            <h2 style={{ color: "#232946", fontWeight: 700 }}>
-              {selectedService} Playlists
+            <h2 style={{ color: "#232946", fontWeight: 700, marginBottom: 16 }}>
+              {selectedPlaylist.name}
             </h2>
-            <div style={{ marginTop: 16, color: "#393e6e" }}>
-              <em>
-                Playlists and tracks from {selectedService} will appear here.
-              </em>
-            </div>
+            {playlistItemsLoading && <div>Loading items...</div>}
+            {playlistItemsError && (
+              <div style={{ color: "red" }}>{playlistItemsError}</div>
+            )}
+            {playlistItems && (
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  background: "#fff",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f7f7fa",
+                      color: "#232946",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <th style={{ padding: "8px 12px", borderBottom: "1px solid #eee", textAlign: "left" }}></th>
+                    <th style={{ padding: "8px 12px", borderBottom: "1px solid #eee", textAlign: "left" }}>Title</th>
+                    <th style={{ padding: "8px 12px", borderBottom: "1px solid #eee", textAlign: "left" }}>Artist</th>
+                    <th style={{ padding: "8px 12px", borderBottom: "1px solid #eee", textAlign: "left" }}>Album</th>
+                    <th style={{ padding: "8px 12px", borderBottom: "1px solid #eee", textAlign: "left" }}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playlistItems.map((item: any) => (
+                    <tr key={item.spotify_track_id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={{ padding: "6px 6px", width: 36 }}>
+                        <button
+                          aria-label="Play"
+                          onClick={() => window.open(item.preview_url || item.spotify_url, "_blank")}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: 18,
+                            color: "#232946",
+                            outline: "none",
+                          }}
+                        >
+                          ▶️
+                        </button>
+                      </td>
+                      <td style={{ padding: "6px 12px", maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <a
+                          href={item.spotify_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#232946", textDecoration: "underline" }}
+                        >
+                          {item.title}
+                        </a>
+                      </td>
+                      <td style={{ padding: "6px 12px" }}>{item.artist}</td>
+                      <td style={{ padding: "6px 12px" }}>{item.album}</td>
+                      <td style={{ padding: "6px 12px" }}>{item.duration_ms ? `${Math.floor(item.duration_ms / 60000)}:${String(Math.floor((item.duration_ms % 60000) / 1000)).padStart(2, "0")}` : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {playlistItems && playlistItems.length === 0 && !playlistItemsLoading && (
+              <div style={{ color: "#393e6e", marginTop: 16 }}>
+                <em>No items found in this playlist.</em>
+              </div>
+            )}
           </div>
         )}
         {selectedService === "YouTube" && selectedPlaylist && (

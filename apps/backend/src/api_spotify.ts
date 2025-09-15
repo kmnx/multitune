@@ -181,15 +181,15 @@ router.get(
     try {
       // Ensure the playlist belongs to the user
       const playlistRes = await pool.query(
-        "SELECT * FROM playlists_spotify WHERE id = $1 AND user_id = $2",
+        "SELECT * FROM playlists_spotify WHERE spotify_playlist_id = $1 AND user_id = $2",
         [playlistId, userId]
       );
       if (!playlistRes.rows.length) {
         return res.status(404).json({ error: "Playlist not found" });
       }
-      // Fetch items ordered by track number
+      // Fetch items ordered by position
       const itemsRes = await pool.query(
-        `SELECT * FROM playlist_items_spotify WHERE playlist_id = $1 ORDER BY track_number ASC`,
+        `SELECT * FROM playlist_items_spotify WHERE playlist_id = $1 ORDER BY position ASC`,
         [playlistId]
       );
       res.json({ items: itemsRes.rows });

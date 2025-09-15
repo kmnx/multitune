@@ -41,6 +41,7 @@ This project uses a local Postgres database via Docker for development.
     --network container:multitune-database-1 \
     postgres:16 \
     psql -h database -U multitune -d multitune -f "/migrations/$(basename "$f")"
+   done
 
 
 
