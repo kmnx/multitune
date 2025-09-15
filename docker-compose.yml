@@ -81,8 +81,6 @@ services:
           if [ -f \"$f\" ]; then
             echo 'Running migration file:' $f
             /usr/bin/psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\"
-          else
-            echo 'No migration files found.'
           fi
         done
       "
