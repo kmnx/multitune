@@ -31,8 +31,7 @@ This project uses a local Postgres database via Docker for development.
 
 
 
-   # for development we use the override docker-compose.dev.yml to start only the database
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml database up
+
 
    # run migrations
    for f in ./apps/backend/migrations/*.sql; do
@@ -51,5 +50,4 @@ This project uses a local Postgres database via Docker for development.
    # for dev machine: backend and frontend servers
    npm run dev --workspace=apps/backend
    npm run dev --workspace=apps/frontend
-
-
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up database
