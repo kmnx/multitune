@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
+    
     "migrate": "node-pg-migrate up",
     "start": "npm run migrate && node dist/index.js"
   },
