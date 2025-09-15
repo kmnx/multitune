@@ -1,5 +1,9 @@
 # Copilot Instructions for Multitune
 
+REMEMBER THAT THIS IS A TYPESCRIPT PROJECT!
+ALWAYS USE TYPESCRIPT SYNTAX AND TYPES!
+
+
 ## Repository Overview
 
 **Multitune** is a web application for collecting, organizing, and playing music from multiple sources (YouTube, Spotify, Bandcamp, etc.). It consists of a Node.js/TypeScript backend API with PostgreSQL database and a React/TypeScript frontend built with Vite.
@@ -15,7 +19,7 @@
 ### Repository Size
 - ~40 source files across backend and frontend
 - Key directories: `apps/backend/src/`, `apps/frontend/src/`
-- Database migrations: 6 SQL files in `apps/backend/migrations/`
+- Database migrations: SQL files in `apps/backend/migrations/`
 
 ### Server setup:
 - Everything is containerized with Docker
@@ -32,7 +36,7 @@
 - Docker & Docker Compose v2+ for database
 - PostgreSQL client tools (for migrations)
 
-### Environment Setup - REQUIRED EVERY TIME
+### Environment Setup
 
 **CRITICAL**: Always set up environment files before running any servers. The backend will crash without proper OAuth credentials.
 
