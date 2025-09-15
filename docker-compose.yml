@@ -78,9 +78,12 @@ services:
         echo 'Listing /migrations directory:'
         ls -l /migrations
         for f in /migrations/*.sql; do
-          echo 'Running migration file:' $f
-          cat $f
-          /usr/bin/psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\";
+          if [ -f \"$f\" ]; then
+            echo 'Running migration file:' $f
+            /usr/bin/psql -h database -U $POSTGRES_USER -d $POSTGRES_DB -f \"$f\"
+          else
+            echo 'No migration files found.'
+          fi
         done
       "
     depends_on:
