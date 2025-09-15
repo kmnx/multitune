@@ -1,3 +1,14 @@
+# Basic Operation
+
+Multitune collects playlists and the tunes they contain from multiple music services (YouTube, Spotify, Bandcamp, etc.), and stores them in its own database. Each playlist and track is associated with the relevant service, user, and all available metadata from that service.
+
+All data displayed on the website comes from Multitune's own database, not directly from external APIs. This enables seamless management of playlists and tracks on any supported service, or even across services, including batch operations.
+
+When implementing features, always ensure that:
+- Playlists and tracks are imported and stored with full metadata
+- All user interactions and displayed data are based on the database
+- Playlist and track management can be performed across services
+
 # Copilot Instructions for Multitune
 
 REMEMBER THAT THIS IS A TYPESCRIPT PROJECT!
