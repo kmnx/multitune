@@ -14,6 +14,9 @@ When implementing features, always ensure that:
 REMEMBER THAT THIS IS A TYPESCRIPT PROJECT!
 ALWAYS USE TYPESCRIPT SYNTAX AND TYPES!
 
+Remember that all actions and data displayed on the website come from Multitune's own database, not directly from external APIs. This enables seamless management of playlists and tracks on any supported service, or even across services, including batch operations.
+
+
 
 ## Repository Overview
 
